@@ -1,6 +1,6 @@
 # 👋 Bienvenido, equipo
 
-Este es **el repo de tu equipo** para el trimestre. Aquí van a subir, a lo largo de todo el
+Este es **el repo de tu equipo para la materia computacion emergente** para el trimestre. Aquí van a subir, a lo largo de todo el
 curso, todas las tareas y actividades que se les asignen: cada entrega es un commit y push
 a este mismo repo, no un repo nuevo por tarea.
 
