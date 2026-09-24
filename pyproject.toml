@@ -1,0 +1,25 @@
+[project]
+name = "reposemergente"
+version = "0.1.0"
+description = "Central repo for automated grading of Emergente coursework"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest", "taskipy"]
+
+[tool.taskipy.tasks]
+test               = "pytest repo-template/tests"
+validate-format    = "python formatos/validador.py"
+grade              = "python correcciones/calificador.py"
+export-moodle      = "python correcciones/exportar_moodle.py"
+report-infractions = "python scripts/reportar_infracciones.py"
+create-repos       = "pwsh -File scripts/crear-repos-trimestre.ps1"
+update-repos       = "pwsh -File scripts/actualizar-repos-trimestre.ps1"
+clone-all          = "bash scripts/clonar-todos.sh"
+run-corrections    = "gh workflow run correcciones-paralelas.yml"
+run-guards         = "gh workflow run guards-copias.yml"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
