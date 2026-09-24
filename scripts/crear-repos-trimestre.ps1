@@ -42,6 +42,11 @@ param(
     # Owner of the repos. Empty = the user authenticated in gh (never an organization)
     [string]$Owner,
 
+    # Guard against creating repos under the wrong gh-authenticated account (e.g. a
+    # company account instead of the personal one this course's repos live under).
+    # Pass -ExpectedOwner "" to bypass intentionally.
+    [string]$ExpectedOwner = "IsaacBakugan",
+
     # Permission granted on invite: pull | triage | push | maintain | admin
     # "push" is the equivalent of "editor"
     [string]$Permission = "push",
@@ -66,6 +71,10 @@ if (-not (Test-Path $teamsFile)) {
 if (-not $Owner) {
     $Owner = gh api user --jq ".login"
     if (-not $Owner) { throw "Could not resolve the user authenticated in gh. Run 'gh auth status'." }
+}
+
+if ($ExpectedOwner -and $Owner -ne $ExpectedOwner) {
+    throw "Resolved owner '$Owner' is not the expected '$ExpectedOwner'. gh is probably authenticated as the wrong account (run 'gh auth switch' or 'gh auth status'). Pass -ExpectedOwner `"`" to bypass intentionally."
 }
 
 $teams = Get-Content $teamsFile -Raw | ConvertFrom-Json
@@ -115,8 +124,15 @@ foreach ($teamDef in $teams) {
     # --- Repo creation (idempotent) ---
     $exists = $false
     if (-not $DryRun) {
+        # gh writes to stderr when the repo doesn't exist yet (the expected first-run case).
+        # With $ErrorActionPreference = "Stop", redirecting a native command's stderr on
+        # PS 5.1 turns that into a terminating NativeCommandError instead of a checkable
+        # exit code, so ErrorAction is relaxed just for this call and $LASTEXITCODE is used.
+        $previousEap = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
         gh repo view "$Owner/$repoName" --json name *> $null
-        $exists = $?
+        $exists = ($LASTEXITCODE -eq 0)
+        $ErrorActionPreference = $previousEap
     }
 
     if ($exists) {

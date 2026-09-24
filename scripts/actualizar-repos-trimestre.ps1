@@ -1,4 +1,4 @@
-<#
+﻿<#
     Pushes /repo-template changes (new tests, guides, schemas) to every active repo of the
     current term, without clobbering answers students have already pushed.
 
@@ -28,7 +28,10 @@ param(
 
     [string]$CommitMessage = "[INFRA] Se actualiza el template del repo de grupo",
 
-    # Template files that are never overwritten if they already exist in the target repo
+    # File NAMES (not paths) that are never overwritten if they already exist in the target
+    # repo, matched at any depth. Matching by name (not full relative path) is deliberate:
+    # every corte-preguntas-N/preguntas.json must be preserved too, not just the top-level
+    # placeholder one, without having to list each corte folder here as it gets added.
     [string[]]$PreservedFiles = @("preguntas.json"),
 
     # If passed, only prints the actions without running them
@@ -85,7 +88,8 @@ foreach ($repo in $repos) {
             $relativePath = $file.FullName.Substring($templateRoot.Length + 1)
             $destinationFile = Join-Path $localPath $relativePath
 
-            if ($PreservedFiles -contains $relativePath -and (Test-Path $destinationFile)) {
+            $fileName = Split-Path $relativePath -Leaf
+            if ($PreservedFiles -contains $fileName -and (Test-Path $destinationFile)) {
                 Write-Host "  Preserving $relativePath (not overwritten)"
                 continue
             }

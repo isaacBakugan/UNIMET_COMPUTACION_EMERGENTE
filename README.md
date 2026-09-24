@@ -87,10 +87,11 @@ Cuando cambias algo en `/repo-template` (un test nuevo, una guía) a mitad de tr
 ```
 
 Lee `trimestre-actual/estado.json`, clona/actualiza cada repo activo, sincroniza el
-template **preservando `preguntas.json`** (nunca pisa las respuestas ya subidas) y solo
-commitea/pushea si hay diferencias reales (idempotente). Corre local con `gh`/`git`, no
-como GitHub Action, para no tener que guardar un token de escritura amplio como secret en
-el repo central.
+template **preservando todo `preguntas.json` y sin tocar el código que escribe el
+estudiante** (ver [guias/actualizacion-template.md](guias/actualizacion-template.md) para
+la invariante completa y cómo está garantizada por test) y solo commitea/pushea si hay
+diferencias reales (idempotente). Corre local con `gh`/`git`, no como GitHub Action, para
+no tener que guardar un token de escritura amplio como secret en el repo central.
 
 ### Fase 2: Trabajo de estudiantes (4-6 semanas)
 - Clonan su repo de grupo
