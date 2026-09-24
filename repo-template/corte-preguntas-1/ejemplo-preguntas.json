@@ -1,0 +1,79 @@
+{
+  "grupo": "grupo-ejemplo",
+  "entregable": "corte-preguntas-1",
+  "_nota": "Esto es solo un ejemplo de formato, una pregunta por lectura. El entregable real lleva 10 preguntas por lectura (40 en total).",
+  "preguntas": [
+    {
+      "id": "m1-vf-1",
+      "lectura": "martes-semana-1",
+      "tipo": "verdadero_falso",
+      "enunciado": "La fotosíntesis solo ocurre durante el día.",
+      "opciones": ["Verdadero", "Falso"],
+      "opcion_correcta": "Falso",
+      "nivel_dificultad": 3
+    },
+    {
+      "id": "m1-ss-1",
+      "lectura": "martes-semana-1",
+      "tipo": "seleccion_simple",
+      "enunciado": "¿Cuál de los siguientes es un gas de efecto invernadero?",
+      "opciones": ["Oxígeno", "Nitrógeno", "Dióxido de carbono", "Helio"],
+      "opcion_correcta": "Dióxido de carbono",
+      "nivel_dificultad": 5
+    },
+    {
+      "id": "j1-vf-1",
+      "lectura": "jueves-semana-1",
+      "tipo": "verdadero_falso",
+      "enunciado": "El agua hierve a 100°C al nivel del mar.",
+      "opciones": ["Verdadero", "Falso"],
+      "opcion_correcta": "Verdadero",
+      "nivel_dificultad": 1
+    },
+    {
+      "id": "j1-ss-1",
+      "lectura": "jueves-semana-1",
+      "tipo": "seleccion_simple",
+      "enunciado": "¿Cuál de las siguientes NO es una fuente de energía renovable?",
+      "opciones": ["Solar", "Eólica", "Carbón", "Hidráulica"],
+      "opcion_correcta": "Carbón",
+      "nivel_dificultad": 6
+    },
+    {
+      "id": "m2-vf-1",
+      "lectura": "martes-semana-2",
+      "tipo": "verdadero_falso",
+      "enunciado": "Ejemplo de pregunta V/F sobre la lectura del martes de la semana 2.",
+      "opciones": ["Verdadero", "Falso"],
+      "opcion_correcta": "Verdadero",
+      "nivel_dificultad": 4
+    },
+    {
+      "id": "m2-ss-1",
+      "lectura": "martes-semana-2",
+      "tipo": "seleccion_simple",
+      "enunciado": "Ejemplo de pregunta de selección simple sobre la lectura del martes de la semana 2.",
+      "opciones": ["Opción A", "Opción B", "Opción C"],
+      "opcion_correcta": "Opción B",
+      "nivel_dificultad": 4
+    },
+    {
+      "id": "j2-vf-1",
+      "lectura": "jueves-semana-2",
+      "tipo": "verdadero_falso",
+      "enunciado": "Ejemplo de pregunta V/F sobre la lectura del jueves de la semana 2.",
+      "opciones": ["Verdadero", "Falso"],
+      "opcion_correcta": "Falso",
+      "nivel_dificultad": 7
+    },
+    {
+      "id": "j2-ss-1",
+      "lectura": "jueves-semana-2",
+      "tipo": "seleccion_simple",
+      "enunciado": "Ejemplo de pregunta de selección simple sobre la lectura del jueves de la semana 2.",
+      "opciones": ["Opción A", "Opción B", "Opción C", "Opción D"],
+      "opcion_correcta": "Opción D",
+      "nivel_dificultad": 8
+    }
+  ]
+}

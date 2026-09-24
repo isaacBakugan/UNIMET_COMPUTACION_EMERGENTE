@@ -174,11 +174,18 @@ Cada trimestre reutiliza este repo, agrega:
 │   └── trimestre-2026-3/
 │       └── ...
 ├── repo-template/
+│   ├── README.md (bienvenida al equipo, lo primero que ve el estudiante)
 │   ├── preguntas.json (structure)
 │   ├── requirements.txt (deps para correr tests, pytest)
-│   └── tests/
-│       ├── test_validar_formato.py
-│       └── test_validar_duplicados.py
+│   ├── tests/
+│   │   ├── test_validar_formato.py
+│   │   └── test_validar_duplicados.py
+│   └── corte-preguntas-1/          # Entregable 1
+│       ├── README.md
+│       ├── ejemplo-preguntas.json  # referencia de formato, no se evalúa
+│       ├── preguntas.json          # "pongan sus preguntas aquí" — esto sí se corrige
+│       └── tests/
+│           └── test_validar_entregable_1.py
 ├── trimestre-actual/
 │   ├── README.md (contrato de equipos.json)
 │   ├── equipos.json (insumo: equipos + delegados del trimestre)
