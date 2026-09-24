@@ -18,14 +18,13 @@
       - Invitar a un usuario que ya es colaborador (o ya tiene invitación pendiente) no falla,
         la API de GitHub simplemente no hace nada nuevo.
 
-    Convención de insumos (carpeta $InsumosPath, por defecto "trimestre-actual"):
-      trimestre-actual/
-        <nombre-equipo-1>/
-          delegado.txt   <- username de GitHub del delegado del equipo (uno por línea si
-                             el equipo quiere más de un delegado; líneas vacías o con # se ignoran)
-        <nombre-equipo-2>/
-          delegado.txt
-        ...
+    Insumos (carpeta $InsumosPath, por defecto "trimestre-actual"): un solo archivo
+    "equipos.json" con el contrato:
+      [
+        { "equipo": "grupo-lecturas-1", "delegados": ["username-delegado-1"] },
+        { "equipo": "grupo-lecturas-2", "delegados": ["username-delegado-2"] }
+      ]
+    Un equipo con "delegados": [] se salta (se avisa por warning, no crea repo ni invita).
 
     Requiere: gh CLI autenticado (gh auth status) con permiso para crear repos públicos
     e invitar colaboradores.
@@ -36,7 +35,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Trimestre,
 
-    # Carpeta con un subdirectorio por equipo (nombre del equipo = nombre de la carpeta)
+    # Carpeta con equipos.json y (una vez corrido) estado.json
     [string]$InsumosPath = "$PSScriptRoot/../trimestre-actual",
 
     # Dueño de los repos. Vacío = usuario autenticado en gh (nunca una organización)
@@ -58,8 +57,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-if (-not (Test-Path $InsumosPath)) {
-    throw "No existe la carpeta de insumos: $InsumosPath"
+$equiposPath = Join-Path $InsumosPath "equipos.json"
+if (-not (Test-Path $equiposPath)) {
+    throw "No existe $equiposPath"
 }
 
 if (-not $Owner) {
@@ -67,9 +67,9 @@ if (-not $Owner) {
     if (-not $Owner) { throw "No se pudo resolver el usuario autenticado en gh. Corre 'gh auth status'." }
 }
 
-$equipos = Get-ChildItem -Path $InsumosPath -Directory
+$equipos = Get-Content $equiposPath -Raw | ConvertFrom-Json
 if (-not $equipos) {
-    throw "No hay carpetas de equipo dentro de $InsumosPath"
+    throw "$equiposPath no tiene equipos"
 }
 
 if (-not (Test-Path $DestinoLocal)) {
@@ -86,9 +86,14 @@ if (Test-Path $estadoPath) {
 $reporte = @()
 $estadoNuevo = @()
 
-foreach ($equipo in $equipos) {
+foreach ($equipoDef in $equipos) {
 
-    $grupo = $equipo.Name
+    $grupo = $equipoDef.equipo
+    if (-not $grupo) {
+        Write-Warning "  Entrada sin campo 'equipo' en $equiposPath, se omite"
+        continue
+    }
+
     # TODO: ajustar convención de nombre de repo si no aplica "<equipo>-<trimestre>"
     $nombreRepo = "$grupo-$Trimestre"
     $rutaLocal = Join-Path $DestinoLocal $nombreRepo
@@ -96,18 +101,13 @@ foreach ($equipo in $equipos) {
 
     Write-Host "=== $nombreRepo ===" -ForegroundColor Cyan
 
-    $delegadoFile = Join-Path $equipo.FullName "delegado.txt"
-    if (-not (Test-Path $delegadoFile)) {
-        Write-Warning "  Falta $delegadoFile, se omite el equipo $grupo"
-        continue
-    }
-
-    $delegados = Get-Content $delegadoFile |
-        ForEach-Object { $_.Trim() } |
+    $delegados = @($equipoDef.delegados) |
+        Where-Object { $_ } |
+        ForEach-Object { $_.ToString().Trim() } |
         Where-Object { $_ -and -not $_.StartsWith("#") }
 
     if (-not $delegados) {
-        Write-Warning "  $delegadoFile no tiene username, se omite el equipo $grupo"
+        Write-Warning "  $grupo no tiene delegados en equipos.json, se omite"
         continue
     }
 

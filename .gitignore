@@ -1,3 +1,4 @@
 # Clones locales de trabajo de los scripts de trimestre (cada uno es su propio repo git,
 # no deben quedar anidados dentro del repo central)
 .repos-trimestre-*/
+.env

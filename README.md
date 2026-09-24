@@ -55,13 +55,12 @@ No se conocen de antemano los usernames de GitHub de todo el curso, así que el 
 **un delegado por equipo**: se invita solo al delegado con permiso `push`, y es él quien
 agrega al resto de su equipo como colaborador directamente desde GitHub (los conoce, tú no).
 
-```
-trimestre-actual/
-├── grupo-lecturas-1/
-│   └── delegado.txt   # username de GitHub del delegado del equipo
-├── grupo-lecturas-2/
-│   └── delegado.txt
-└── ...
+```json
+// trimestre-actual/equipos.json
+[
+  { "equipo": "grupo-lecturas-1", "delegados": ["username-delegado-1"] },
+  { "equipo": "grupo-lecturas-2", "delegados": ["username-delegado-2"] }
+]
 ```
 
 ```powershell
@@ -69,10 +68,11 @@ trimestre-actual/
 ```
 
 El script:
-- Lee un equipo por cada subcarpeta de `trimestre-actual/`
+- Lee todos los equipos de `trimestre-actual/equipos.json` (un solo archivo, contrato en
+  `trimestre-actual/README.md`)
 - Crea el repo público (bajo tu cuenta, nunca en organización) y le empuja `/repo-template` —
   **solo si el repo no existe ya** (idempotente, no pisa trabajo de estudiantes)
-- Invita al delegado de `delegado.txt` como colaborador con permiso `push` ("editor")
+- Invita a los `delegados` de cada equipo como colaboradores con permiso `push` ("editor")
 - Genera `invitaciones-<trimestre>.csv` con el link de invitación por equipo, para
   compartirlo con el delegado (lo abre logueado con su cuenta y acepta)
 - Deja `trimestre-actual/estado.json` con los repos activos (equipo, repo, owner, url,
@@ -180,10 +180,9 @@ Cada trimestre reutiliza este repo, agrega:
 │       ├── test_validar_formato.py
 │       └── test_validar_duplicados.py
 ├── trimestre-actual/
-│   ├── README.md (convención de esta carpeta)
-│   ├── estado.json (repos activos, lo mantiene crear-repos-trimestre.ps1)
-│   └── grupo-ejemplo/
-│       └── delegado.txt (placeholder)
+│   ├── README.md (contrato de equipos.json)
+│   ├── equipos.json (insumo: equipos + delegados del trimestre)
+│   └── estado.json (repos activos, lo mantiene crear-repos-trimestre.ps1)
 ├── .github/workflows/
 │   ├── correcciones-paralelas.yml
 │   ├── guards-copias.yml
@@ -200,7 +199,7 @@ Cada trimestre reutiliza este repo, agrega:
 ### Crear repos para un nuevo trimestre
 ```powershell
 & ./scripts/crear-repos-trimestre.ps1 -Trimestre "2026-2"
-# equipos leídos de trimestre-actual/<nombre-equipo>/delegado.txt
+# equipos leídos de trimestre-actual/equipos.json
 ```
 
 ### Pushear cambios de template a los repos activos
