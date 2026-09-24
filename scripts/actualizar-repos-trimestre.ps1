@@ -1,120 +1,120 @@
 <#
-    Pushea cambios de /repo-template (tests nuevos, guías, esquemas) a todos los repos
-    activos del trimestre actual, sin pisar las respuestas ya subidas por los estudiantes.
+    Pushes /repo-template changes (new tests, guides, schemas) to every active repo of the
+    current term, without clobbering answers students have already pushed.
 
-    Fuente de verdad de "qué repos están activos": trimestre-actual/estado.json, que deja
-    escrito scripts/crear-repos-trimestre.ps1. Si no existe, corre ese script primero.
+    Source of truth for "which repos are active": trimestre-actual/estado.json, written by
+    scripts/crear-repos-trimestre.ps1. If it doesn't exist, run that script first.
 
-    Se ejecuta local (gh + git), no vía GitHub Action: reusa la sesión de gh ya autenticada
-    en esta máquina en vez de guardar un token de alcance amplio como secret en el repo
-    central solo para pushear a N repos ajenos.
+    Runs locally (gh + git), not as a GitHub Action: reuses the gh session already
+    authenticated on this machine instead of storing a broad-scope token as a secret in
+    the central repo just to push to N other repos.
 
-    $PreservarArchivos declara qué archivos del template NUNCA se sobreescriben si ya
-    existen en el repo del equipo (por defecto, preguntas.json: son las respuestas reales
-    del equipo, no el placeholder del template).
+    $PreservedFiles declares which template files are NEVER overwritten if they already
+    exist in a team's repo (by default, preguntas.json: that's the team's real answers,
+    not the template placeholder).
 
-    Idempotente: si el diff contra el template está vacío, no commitea ni pushea.
+    Idempotent: if the diff against the template is empty, nothing is committed or pushed.
 #>
 
 param(
-    # Carpeta con un subdirectorio por equipo, la misma que usa crear-repos-trimestre.ps1
-    [string]$InsumosPath = "$PSScriptRoot/../trimestre-actual",
+    # Folder with a subdirectory per team, same one used by crear-repos-trimestre.ps1
+    [string]$InputsPath = "$PSScriptRoot/../trimestre-actual",
 
-    # Carpeta con el template a sincronizar
+    # Folder with the template to sync
     [string]$RepoTemplatePath = "$PSScriptRoot/../repo-template",
 
-    # Carpeta local donde se clonan/actualizan los repos de los equipos
-    [string]$DestinoLocal = "$PSScriptRoot/../.repos-trimestre-actual",
+    # Local folder where team repos get cloned/updated
+    [string]$LocalDestination = "$PSScriptRoot/../.repos-trimestre-actual",
 
-    [string]$Mensaje = "[INFRA] Se actualiza el template del repo de grupo",
+    [string]$CommitMessage = "[INFRA] Se actualiza el template del repo de grupo",
 
-    # Archivos del template que jamás se sobreescriben si ya existen en el repo destino
-    [string[]]$PreservarArchivos = @("preguntas.json"),
+    # Template files that are never overwritten if they already exist in the target repo
+    [string[]]$PreservedFiles = @("preguntas.json"),
 
-    # Si se pasa, solo imprime las acciones sin ejecutarlas
+    # If passed, only prints the actions without running them
     [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
-$estadoPath = Join-Path $InsumosPath "estado.json"
-if (-not (Test-Path $estadoPath)) {
-    throw "No existe $estadoPath. Corre primero ./scripts/crear-repos-trimestre.ps1"
+$statusPath = Join-Path $InputsPath "estado.json"
+if (-not (Test-Path $statusPath)) {
+    throw "Missing $statusPath. Run ./scripts/crear-repos-trimestre.ps1 first"
 }
 
-$repos = Get-Content $estadoPath -Raw | ConvertFrom-Json
+$repos = Get-Content $statusPath -Raw | ConvertFrom-Json
 if (-not $repos) {
-    throw "$estadoPath no tiene repos activos"
+    throw "$statusPath has no active repos"
 }
 
 if (-not (Test-Path $RepoTemplatePath)) {
-    throw "No existe la carpeta de template: $RepoTemplatePath"
+    throw "Missing template folder: $RepoTemplatePath"
 }
 
-if (-not (Test-Path $DestinoLocal)) {
-    New-Item -ItemType Directory -Path $DestinoLocal | Out-Null
+if (-not (Test-Path $LocalDestination)) {
+    New-Item -ItemType Directory -Path $LocalDestination | Out-Null
 }
 
-$raizTemplate = (Resolve-Path $RepoTemplatePath).Path
-$archivosTemplate = Get-ChildItem -Path $raizTemplate -Recurse -File
+$templateRoot = (Resolve-Path $RepoTemplatePath).Path
+$templateFiles = Get-ChildItem -Path $templateRoot -Recurse -File
 
-foreach ($r in $repos) {
+foreach ($repo in $repos) {
 
-    if ($r.estado -ne "activo") {
-        Write-Host "=== $($r.repo) === (omitido, estado: $($r.estado))" -ForegroundColor DarkGray
+    if ($repo.status -ne "active") {
+        Write-Host "=== $($repo.repo) === (skipped, status: $($repo.status))" -ForegroundColor DarkGray
         continue
     }
 
-    Write-Host "=== $($r.repo) ===" -ForegroundColor Cyan
-    $rutaLocal = Join-Path $DestinoLocal $r.repo
+    Write-Host "=== $($repo.repo) ===" -ForegroundColor Cyan
+    $localPath = Join-Path $LocalDestination $repo.repo
 
     try {
         if ($DryRun) {
-            Write-Host "  [DRY-RUN] clonar/actualizar $($r.owner)/$($r.repo) -> $rutaLocal"
+            Write-Host "  [DRY-RUN] clone/update $($repo.owner)/$($repo.repo) -> $localPath"
         }
-        elseif (-not (Test-Path (Join-Path $rutaLocal ".git"))) {
-            gh repo clone "$($r.owner)/$($r.repo)" $rutaLocal
-            if (-not $?) { throw "no se pudo clonar" }
+        elseif (-not (Test-Path (Join-Path $localPath ".git"))) {
+            gh repo clone "$($repo.owner)/$($repo.repo)" $localPath
+            if (-not $?) { throw "could not clone" }
         }
         else {
-            Push-Location $rutaLocal
+            Push-Location $localPath
             try { git pull } finally { Pop-Location }
         }
 
-        foreach ($archivo in $archivosTemplate) {
-            $relativo = $archivo.FullName.Substring($raizTemplate.Length + 1)
-            $destinoArchivo = Join-Path $rutaLocal $relativo
+        foreach ($file in $templateFiles) {
+            $relativePath = $file.FullName.Substring($templateRoot.Length + 1)
+            $destinationFile = Join-Path $localPath $relativePath
 
-            if ($PreservarArchivos -contains $relativo -and (Test-Path $destinoArchivo)) {
-                Write-Host "  Se preserva $relativo (no se sobreescribe)"
+            if ($PreservedFiles -contains $relativePath -and (Test-Path $destinationFile)) {
+                Write-Host "  Preserving $relativePath (not overwritten)"
                 continue
             }
 
             if ($DryRun) {
-                Write-Host "  [DRY-RUN] copiar $relativo"
+                Write-Host "  [DRY-RUN] copy $relativePath"
                 continue
             }
 
-            $destinoCarpeta = Split-Path $destinoArchivo -Parent
-            if (-not (Test-Path $destinoCarpeta)) {
-                New-Item -ItemType Directory -Path $destinoCarpeta -Force | Out-Null
+            $destinationFolder = Split-Path $destinationFile -Parent
+            if (-not (Test-Path $destinationFolder)) {
+                New-Item -ItemType Directory -Path $destinationFolder -Force | Out-Null
             }
-            Copy-Item -Path $archivo.FullName -Destination $destinoArchivo -Force
+            Copy-Item -Path $file.FullName -Destination $destinationFile -Force
         }
 
         if ($DryRun) { continue }
 
-        Push-Location $rutaLocal
+        Push-Location $localPath
         try {
             git add -A
-            $cambios = git status --porcelain
-            if ($cambios) {
-                git commit -m $Mensaje
+            $changes = git status --porcelain
+            if ($changes) {
+                git commit -m $CommitMessage
                 git push
-                Write-Host "  Actualizado y pusheado"
+                Write-Host "  Updated and pushed"
             }
             else {
-                Write-Host "  Sin cambios contra el template, no se pushea"
+                Write-Host "  No changes against the template, not pushing"
             }
         }
         finally {
@@ -122,6 +122,6 @@ foreach ($r in $repos) {
         }
     }
     catch {
-        Write-Warning "  Fallo actualizando $($r.repo): $_"
+        Write-Warning "  Failed updating $($repo.repo): $_"
     }
 }

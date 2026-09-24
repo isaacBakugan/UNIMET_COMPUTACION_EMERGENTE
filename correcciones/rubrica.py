@@ -1,1 +1,1 @@
-# TODO: rúbrica de evaluación (criterios y ponderaciones por tipo de pregunta).
+# TODO: grading rubric (criteria and weights per question type).

@@ -1,1 +1,1 @@
-# TODO: valida que preguntas.json cumpla con los esquemas de /formatos.
+# TODO: validate that preguntas.json matches the /formatos schemas.

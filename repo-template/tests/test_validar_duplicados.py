@@ -1,1 +1,1 @@
-# TODO: valida que no haya preguntas vacías o duplicadas dentro del mismo grupo.
+# TODO: validate there are no empty or duplicate questions within the same team.

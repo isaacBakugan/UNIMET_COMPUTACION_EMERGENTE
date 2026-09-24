@@ -1,1 +1,1 @@
-# TODO: validador de esquemas de /formatos contra preguntas.json de cada repo de grupo.
+# TODO: validate the /formatos schemas against each group repo's preguntas.json.

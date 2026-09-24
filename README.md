@@ -58,13 +58,13 @@ agrega al resto de su equipo como colaborador directamente desde GitHub (los con
 ```json
 // trimestre-actual/equipos.json
 [
-  { "equipo": "grupo-lecturas-1", "delegados": ["username-delegado-1"] },
-  { "equipo": "grupo-lecturas-2", "delegados": ["username-delegado-2"] }
+  { "team": "grupo-lecturas-1", "delegates": ["delegate-username-1"] },
+  { "team": "grupo-lecturas-2", "delegates": ["delegate-username-2"] }
 ]
 ```
 
 ```powershell
-& ./scripts/crear-repos-trimestre.ps1 -Trimestre "2026-2"
+& ./scripts/crear-repos-trimestre.ps1 -Term "2026-2"
 ```
 
 El script:
@@ -72,11 +72,11 @@ El script:
   `trimestre-actual/README.md`)
 - Crea el repo público (bajo tu cuenta, nunca en organización) y le empuja `/repo-template` —
   **solo si el repo no existe ya** (idempotente, no pisa trabajo de estudiantes)
-- Invita a los `delegados` de cada equipo como colaboradores con permiso `push` ("editor")
-- Genera `invitaciones-<trimestre>.csv` con el link de invitación por equipo, para
+- Invita a los `delegates` de cada equipo como colaboradores con permiso `push` ("editor")
+- Genera `invitations-<term>.csv` con el link de invitación por equipo, para
   compartirlo con el delegado (lo abre logueado con su cuenta y acepta)
-- Deja `trimestre-actual/estado.json` con los repos activos (equipo, repo, owner, url,
-  delegados, fecha de creación)
+- Deja `trimestre-actual/estado.json` con los repos activos (team, repo, owner, url,
+  delegates, fecha de creación)
 
 ### Actualizar el template en repos ya creados
 
@@ -157,6 +157,7 @@ Cada trimestre reutiliza este repo, agrega:
 ```
 .
 ├── README.md (este)
+├── CLAUDE.md (convenciones del repo para trabajar con Claude Code)
 ├── .gitignore
 ├── formatos/
 │   ├── pregunta-vf.schema.json
@@ -167,6 +168,7 @@ Cada trimestre reutiliza este repo, agrega:
 │   ├── calificador.py
 │   └── exportar_moodle.py
 ├── guias/
+│   ├── estandares-de-codigo.md (inglés en código, español en documentos)
 │   ├── trimestre-2026-2/
 │   │   ├── tarea-1-lecturas.md
 │   │   ├── tarea-2-preguntas.md
@@ -180,12 +182,18 @@ Cada trimestre reutiliza este repo, agrega:
 │   ├── tests/
 │   │   ├── test_validar_formato.py
 │   │   └── test_validar_duplicados.py
-│   └── corte-preguntas-1/          # Entregable 1
+│   ├── corte-preguntas-1/          # Entregable 1
+│   │   ├── README.md
+│   │   ├── ejemplo-preguntas.json  # referencia de formato, no se evalúa
+│   │   ├── preguntas.json          # "pongan sus preguntas aquí" — esto sí se corrige
+│   │   └── tests/
+│   │       └── test_validar_entregable_1.py
+│   └── tarea-1-codigo/              # Tarea 1: Perceptrón
 │       ├── README.md
-│       ├── ejemplo-preguntas.json  # referencia de formato, no se evalúa
-│       ├── preguntas.json          # "pongan sus preguntas aquí" — esto sí se corrige
+│       ├── assets/                 # datasets reales (no_separables.csv, fuzzy_separables.csv)
+│       ├── perceptron.py           # (no existe todavía — lo escribe el equipo)
 │       └── tests/
-│           └── test_validar_entregable_1.py
+│           └── test_validar_tarea_1.py
 ├── trimestre-actual/
 │   ├── README.md (contrato de equipos.json)
 │   ├── equipos.json (insumo: equipos + delegados del trimestre)
@@ -205,7 +213,7 @@ Cada trimestre reutiliza este repo, agrega:
 
 ### Crear repos para un nuevo trimestre
 ```powershell
-& ./scripts/crear-repos-trimestre.ps1 -Trimestre "2026-2"
+& ./scripts/crear-repos-trimestre.ps1 -Term "2026-2"
 # equipos leídos de trimestre-actual/equipos.json
 ```
 

@@ -19,15 +19,15 @@
 
 ## Formato de cada pregunta
 
-| Campo              | Tipo                              | Descripción                                                            |
-|---------------------|-----------------------------------|-------------------------------------------------------------------------|
-| `id`                | string                             | Identificador corto y único (`m1-vf-1`, `j1-ss-3`, ...)                 |
-| `lectura`           | string                             | A qué lectura pertenece: `martes-semana-1`, `jueves-semana-1`, `martes-semana-2` o `jueves-semana-2` |
-| `tipo`              | `"verdadero_falso"` \| `"seleccion_simple"` | Tipo de pregunta                                              |
-| `enunciado`         | string                             | El texto de la pregunta, no puede estar vacío                          |
-| `opciones`          | array de strings                  | 2 opciones si es V/F (`Verdadero`/`Falso`), 3 o más si es selección simple |
-| `opcion_correcta`   | string                             | Debe ser **exactamente igual** a una de las `opciones`                 |
-| `nivel_dificultad`  | entero, 1 a 10                    | Qué tan difícil creen que es la pregunta (1 = muy fácil, 10 = muy difícil) |
+| Campo               | Tipo                                    | Descripción                                                            |
+|----------------------|------------------------------------------|-------------------------------------------------------------------------|
+| `id`                 | string                                    | Identificador corto y único (`tue1-tf-1`, `thu1-mc-3`, ...)             |
+| `reading`            | string                                    | A qué lectura pertenece: `tuesday-week-1`, `thursday-week-1`, `tuesday-week-2` o `thursday-week-2` |
+| `type`               | `"true_false"` \| `"multiple_choice"`     | Tipo de pregunta                                                       |
+| `statement`          | string                                    | El texto de la pregunta, no puede estar vacío                          |
+| `options`            | array de strings                         | 2 opciones si es V/F (`Verdadero`/`Falso`), 3 o más si es selección simple |
+| `correct_option`     | string                                    | Debe ser **exactamente igual** a una de las `options`                  |
+| `difficulty_level`   | entero, 1 a 10                           | Qué tan difícil creen que es la pregunta (1 = muy fácil, 10 = muy difícil) |
 
 Vean `ejemplo-preguntas.json` para un ejemplo completo por cada lectura.
 
@@ -38,12 +38,12 @@ Vean `ejemplo-preguntas.json` para un ejemplo completo por cada lectura.
 - Que exista y sea JSON válido
 - Exactamente **40 preguntas en total**
 - Exactamente **10 preguntas por cada una de las 4 lecturas** (5 V/F + 5 selección simple)
-- Todos los campos requeridos presentes, incluyendo `lectura` con un valor válido
-- Enunciados no vacíos y no duplicados dentro del equipo
-- `opcion_correcta` está entre las `opciones`
+- Todos los campos requeridos presentes, incluyendo `reading` con un valor válido
+- Enunciados (`statement`) no vacíos y no duplicados dentro del equipo
+- `correct_option` está entre las `options`
 - V/F tiene exactamente las opciones `Verdadero`/`Falso`
 - Selección simple tiene 3 o más opciones
-- `nivel_dificultad` es un entero entre 1 y 10
+- `difficulty_level` es un entero entre 1 y 10
 
 Que los tests pasen en verde **no significa que las preguntas estén bien hechas** — solo
 que el formato es correcto. El contenido lo evalúa la rúbrica del repo central.

@@ -1,1 +1,1 @@
-# TODO: computa similitud entre respuestas de todos los grupos y reporta sospechas de copia.
+# TODO: compute answer similarity across all teams and report suspected copying.

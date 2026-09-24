@@ -1,1 +1,1 @@
-# TODO: lógica que corre la rúbrica sobre las respuestas de un grupo y produce el puntaje.
+# TODO: logic that runs the rubric over a team's answers and produces the score.

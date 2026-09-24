@@ -1,1 +1,1 @@
-# TODO: parsea el informe JSON/CSV de corrección e inserta calificaciones en Moodle vía API.
+# TODO: parse the JSON/CSV grading report and push grades into Moodle via its API.

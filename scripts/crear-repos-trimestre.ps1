@@ -1,141 +1,142 @@
 <#
-    Crea los repos de grupo de un trimestre (públicos, bajo la cuenta personal de GitHub,
-    NO bajo una organización), les empuja el contenido de /repo-template y agrega como
-    colaborador con permiso "editor" (push) al DELEGADO de cada equipo.
+    Creates the term's team repos (public, under the personal GitHub account, NOT under
+    an organization), pushes /repo-template into each one, and adds each team's DELEGATE
+    as a collaborator with "editor" permission (push).
 
-    Deja trimestre-actual/estado.json con los repos activos del trimestre (equipo, repo,
-    owner, url, delegados, fecha de creación). Ese archivo es el que usa
-    scripts/actualizar-repos-trimestre.ps1 para saber a qué repos pushear cambios de template.
+    Leaves trimestre-actual/estado.json with the term's active repos (team, repo, owner,
+    url, delegates, creation date). scripts/actualizar-repos-trimestre.ps1 reads that file
+    to know which repos to push template updates to.
 
-    No se conocen de antemano los usernames de todos los estudiantes, así que no se invita
-    al curso completo: se invita solo al delegado de cada equipo, y es el delegado quien
-    agrega al resto de su equipo directamente desde GitHub (Settings > Collaborators),
-    porque él sí conoce a sus compañeros.
+    Student GitHub usernames aren't known ahead of time, so the whole course isn't
+    invited: only the team's delegate gets invited, and the delegate is the one who adds
+    the rest of the team directly from GitHub (Settings > Collaborators), because they
+    actually know their teammates.
 
-    Idempotente:
-      - Si el repo ya existe, NO se recrea ni se pushea el template (para no pisar el
-        trabajo que ya haya subido el equipo). Solo se procesa la invitación del delegado.
-      - Invitar a un usuario que ya es colaborador (o ya tiene invitación pendiente) no falla,
-        la API de GitHub simplemente no hace nada nuevo.
+    Idempotent:
+      - If the repo already exists, it is NOT recreated and the template is NOT pushed
+        again (so it doesn't clobber work the team already pushed). Only the delegate
+        invitation is (re)processed.
+      - Inviting a user who is already a collaborator (or already has a pending
+        invitation) doesn't fail, the GitHub API just no-ops.
 
-    Insumos (carpeta $InsumosPath, por defecto "trimestre-actual"): un solo archivo
-    "equipos.json" con el contrato:
+    Inputs (folder $InputsPath, "trimestre-actual" by default): a single "equipos.json"
+    file with this contract:
       [
-        { "equipo": "grupo-lecturas-1", "delegados": ["username-delegado-1"] },
-        { "equipo": "grupo-lecturas-2", "delegados": ["username-delegado-2"] }
+        { "team": "grupo-lecturas-1", "delegates": ["delegate-username-1"] },
+        { "team": "grupo-lecturas-2", "delegates": ["delegate-username-2"] }
       ]
-    Un equipo con "delegados": [] se salta (se avisa por warning, no crea repo ni invita).
+    A team with "delegates": [] is skipped (warning only, no repo created, no invite).
 
-    Requiere: gh CLI autenticado (gh auth status) con permiso para crear repos públicos
-    e invitar colaboradores.
+    Requires: gh CLI authenticated (gh auth status) with permission to create public
+    repos and invite collaborators.
 #>
 
 param(
-    # TODO: trimestre en curso, ej. "2026-2"
+    # TODO: current term, e.g. "2026-2"
     [Parameter(Mandatory = $true)]
-    [string]$Trimestre,
+    [string]$Term,
 
-    # Carpeta con equipos.json y (una vez corrido) estado.json
-    [string]$InsumosPath = "$PSScriptRoot/../trimestre-actual",
+    # Folder with equipos.json and (once this has run) estado.json
+    [string]$InputsPath = "$PSScriptRoot/../trimestre-actual",
 
-    # Dueño de los repos. Vacío = usuario autenticado en gh (nunca una organización)
+    # Owner of the repos. Empty = the user authenticated in gh (never an organization)
     [string]$Owner,
 
-    # Permiso a otorgar en la invitación: pull | triage | push | maintain | admin
-    # "push" es el equivalente de "editor"
+    # Permission granted on invite: pull | triage | push | maintain | admin
+    # "push" is the equivalent of "editor"
     [string]$Permission = "push",
 
-    # Carpeta local donde se clonan los repos recién creados
-    [string]$DestinoLocal = "$PSScriptRoot/../.repos-trimestre-$Trimestre",
+    # Local folder where newly created repos get cloned
+    [string]$LocalDestination = "$PSScriptRoot/../.repos-trimestre-$Term",
 
-    # Carpeta con el template a empujar a cada repo nuevo (esquemas, tests, guía)
+    # Folder with the template pushed into every new repo (schemas, tests, guide)
     [string]$TemplatesPath = "$PSScriptRoot/../repo-template",
 
-    # Si se pasa, solo imprime las acciones sin ejecutarlas
+    # If passed, only prints the actions without running them
     [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
-$equiposPath = Join-Path $InsumosPath "equipos.json"
-if (-not (Test-Path $equiposPath)) {
-    throw "No existe $equiposPath"
+$teamsFile = Join-Path $InputsPath "equipos.json"
+if (-not (Test-Path $teamsFile)) {
+    throw "Missing $teamsFile"
 }
 
 if (-not $Owner) {
     $Owner = gh api user --jq ".login"
-    if (-not $Owner) { throw "No se pudo resolver el usuario autenticado en gh. Corre 'gh auth status'." }
+    if (-not $Owner) { throw "Could not resolve the user authenticated in gh. Run 'gh auth status'." }
 }
 
-$equipos = Get-Content $equiposPath -Raw | ConvertFrom-Json
-if (-not $equipos) {
-    throw "$equiposPath no tiene equipos"
+$teams = Get-Content $teamsFile -Raw | ConvertFrom-Json
+if (-not $teams) {
+    throw "$teamsFile has no teams"
 }
 
-if (-not (Test-Path $DestinoLocal)) {
-    New-Item -ItemType Directory -Path $DestinoLocal | Out-Null
+if (-not (Test-Path $LocalDestination)) {
+    New-Item -ItemType Directory -Path $LocalDestination | Out-Null
 }
 
-$estadoPath = Join-Path $InsumosPath "estado.json"
-$estadoPrevio = @{}
-if (Test-Path $estadoPath) {
-    $crudo = Get-Content $estadoPath -Raw | ConvertFrom-Json
-    foreach ($item in $crudo) { $estadoPrevio[$item.repo] = $item }
+$statusPath = Join-Path $InputsPath "estado.json"
+$previousStatus = @{}
+if (Test-Path $statusPath) {
+    $raw = Get-Content $statusPath -Raw | ConvertFrom-Json
+    foreach ($item in $raw) { $previousStatus[$item.repo] = $item }
 }
 
-$reporte = @()
-$estadoNuevo = @()
+$report = @()
+$newStatus = @()
 
-foreach ($equipoDef in $equipos) {
+foreach ($teamDef in $teams) {
 
-    $grupo = $equipoDef.equipo
-    if (-not $grupo) {
-        Write-Warning "  Entrada sin campo 'equipo' en $equiposPath, se omite"
+    $teamName = $teamDef.team
+    if (-not $teamName) {
+        Write-Warning "  Entry with no 'team' field in $teamsFile, skipping"
         continue
     }
 
-    # TODO: ajustar convención de nombre de repo si no aplica "<equipo>-<trimestre>"
-    $nombreRepo = "$grupo-$Trimestre"
-    $rutaLocal = Join-Path $DestinoLocal $nombreRepo
-    $linkInvitacion = "https://github.com/$Owner/$nombreRepo/invitations"
+    # TODO: adjust the repo naming convention if "<team>-<term>" doesn't apply
+    $repoName = "$teamName-$Term"
+    $localPath = Join-Path $LocalDestination $repoName
+    $invitationLink = "https://github.com/$Owner/$repoName/invitations"
 
-    Write-Host "=== $nombreRepo ===" -ForegroundColor Cyan
+    Write-Host "=== $repoName ===" -ForegroundColor Cyan
 
-    $delegados = @($equipoDef.delegados) |
+    $delegates = @($teamDef.delegates) |
         Where-Object { $_ } |
         ForEach-Object { $_.ToString().Trim() } |
         Where-Object { $_ -and -not $_.StartsWith("#") }
 
-    if (-not $delegados) {
-        Write-Warning "  $grupo no tiene delegados en equipos.json, se omite"
+    if (-not $delegates) {
+        Write-Warning "  $teamName has no delegates in equipos.json, skipping"
         continue
     }
 
-    # --- Creación del repo (idempotente) ---
-    $existe = $false
+    # --- Repo creation (idempotent) ---
+    $exists = $false
     if (-not $DryRun) {
-        gh repo view "$Owner/$nombreRepo" --json name *> $null
-        $existe = $?
+        gh repo view "$Owner/$repoName" --json name *> $null
+        $exists = $?
     }
 
-    if ($existe) {
-        Write-Host "  Repo ya existe, se omite creación y push del template"
+    if ($exists) {
+        Write-Host "  Repo already exists, skipping creation and template push"
     }
     elseif ($DryRun) {
-        Write-Host "  [DRY-RUN] gh repo create $Owner/$nombreRepo --public --clone -> $rutaLocal"
+        Write-Host "  [DRY-RUN] gh repo create $Owner/$repoName --public --clone -> $localPath"
     }
     else {
-        gh repo create "$Owner/$nombreRepo" --public --clone --confirm
-        if (-not $?) { throw "Fallo al crear el repo $nombreRepo" }
+        gh repo create "$Owner/$repoName" --public --clone --confirm
+        if (-not $?) { throw "Failed to create repo $repoName" }
 
-        Move-Item -Path (Join-Path (Get-Location) $nombreRepo) -Destination $rutaLocal -Force
+        Move-Item -Path (Join-Path (Get-Location) $repoName) -Destination $localPath -Force
 
-        Copy-Item -Path "$TemplatesPath/*" -Destination $rutaLocal -Recurse -Force
+        Copy-Item -Path "$TemplatesPath/*" -Destination $localPath -Recurse -Force
 
-        Push-Location $rutaLocal
+        Push-Location $localPath
         try {
             git add -A
-            git commit -m "[INFRA] Se agrega el template inicial del trimestre $Trimestre"
+            git commit -m "[INFRA] Se agrega el template inicial del trimestre $Term"
             git push
         }
         finally {
@@ -143,54 +144,54 @@ foreach ($equipoDef in $equipos) {
         }
     }
 
-    # --- Invitación del/los delegado(s) (idempotente) ---
-    foreach ($delegado in $delegados) {
+    # --- Delegate invitation(s) (idempotent) ---
+    foreach ($delegate in $delegates) {
         if ($DryRun) {
-            Write-Host "  [DRY-RUN] gh api -X PUT repos/$Owner/$nombreRepo/collaborators/$delegado -f permission=$Permission"
+            Write-Host "  [DRY-RUN] gh api -X PUT repos/$Owner/$repoName/collaborators/$delegate -f permission=$Permission"
         }
         else {
             try {
-                gh api -X PUT "repos/$Owner/$nombreRepo/collaborators/$delegado" -f permission=$Permission *> $null
-                Write-Host "  Delegado invitado: $delegado"
+                gh api -X PUT "repos/$Owner/$repoName/collaborators/$delegate" -f permission=$Permission *> $null
+                Write-Host "  Delegate invited: $delegate"
             }
             catch {
-                Write-Warning "  No se pudo invitar a $delegado en $nombreRepo : $_"
+                Write-Warning "  Could not invite $delegate to $repoName : $_"
             }
         }
 
-        $reporte += [PSCustomObject]@{
-            Equipo     = $grupo
-            Repo       = $nombreRepo
-            Delegado   = $delegado
-            Invitacion = $linkInvitacion
+        $report += [PSCustomObject]@{
+            Team           = $teamName
+            Repo           = $repoName
+            Delegate       = $delegate
+            InvitationLink = $invitationLink
         }
     }
 
     if (-not $DryRun) {
-        $creadoEn = if ($estadoPrevio.ContainsKey($nombreRepo)) { $estadoPrevio[$nombreRepo].creadoEn } else { (Get-Date).ToUniversalTime().ToString("o") }
+        $createdAt = if ($previousStatus.ContainsKey($repoName)) { $previousStatus[$repoName].createdAt } else { (Get-Date).ToUniversalTime().ToString("o") }
 
-        $estadoNuevo += [PSCustomObject]@{
-            equipo     = $grupo
-            repo       = $nombreRepo
-            owner      = $Owner
-            url        = "https://github.com/$Owner/$nombreRepo"
-            trimestre  = $Trimestre
-            delegados  = $delegados
-            creadoEn   = $creadoEn
-            estado     = "activo"
+        $newStatus += [PSCustomObject]@{
+            team      = $teamName
+            repo      = $repoName
+            owner     = $Owner
+            url       = "https://github.com/$Owner/$repoName"
+            term      = $Term
+            delegates = $delegates
+            createdAt = $createdAt
+            status    = "active"
         }
     }
 }
 
 if (-not $DryRun) {
-    $estadoNuevo | ConvertTo-Json -Depth 4 | Set-Content -Path $estadoPath -Encoding UTF8
+    $newStatus | ConvertTo-Json -Depth 4 | Set-Content -Path $statusPath -Encoding UTF8
     Write-Host ""
-    Write-Host "Estado del trimestre guardado en: $estadoPath" -ForegroundColor Green
+    Write-Host "Term status saved to: $statusPath" -ForegroundColor Green
 }
 
-$csvPath = Join-Path $DestinoLocal "invitaciones-$Trimestre.csv"
-$reporte | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
+$csvPath = Join-Path $LocalDestination "invitations-$Term.csv"
+$report | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
 
 Write-Host ""
-Write-Host "Reporte de invitaciones guardado en: $csvPath" -ForegroundColor Green
-$reporte | Format-Table -AutoSize
+Write-Host "Invitation report saved to: $csvPath" -ForegroundColor Green
+$report | Format-Table -AutoSize

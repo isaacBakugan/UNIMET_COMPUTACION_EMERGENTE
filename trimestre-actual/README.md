@@ -17,21 +17,21 @@ Un solo archivo con todos los equipos del trimestre:
 
 ```json
 [
-  { "equipo": "grupo-lecturas-1", "delegados": ["username-delegado-1"] },
-  { "equipo": "grupo-lecturas-2", "delegados": ["username-delegado-2"] }
+  { "team": "grupo-lecturas-1", "delegates": ["delegate-username-1"] },
+  { "team": "grupo-lecturas-2", "delegates": ["delegate-username-2"] }
 ]
 ```
 
-- `equipo`: nombre del equipo, se usa para armar el nombre del repo (`<equipo>-<trimestre>`).
-- `delegados`: usernames de GitHub (normalmente uno solo) del/los delegado(s) del equipo.
+- `team`: nombre del equipo, se usa para armar el nombre del repo (`<team>-<trimestre>`).
+- `delegates`: usernames de GitHub (normalmente uno solo) del/los delegado(s) del equipo.
   Es la única persona que el script invita directamente con permiso `push`; ese delegado
   agrega al resto de su equipo como colaborador desde GitHub, porque él sí conoce a sus
   compañeros.
-- Un equipo con `"delegados": []` se salta (no crea repo ni invita) — así se puede dejar
+- Un equipo con `"delegates": []` se salta (no crea repo ni invita) — así se puede dejar
   declarado sin activar, como el `grupo-ejemplo` de este archivo.
 
-`estado.json`: ledger de los repos activos del trimestre (equipo, repo, owner, url,
-delegados, fecha de creación). Lo mantiene el script creador; `actualizar-repos-trimestre.ps1`
+`estado.json`: ledger de los repos activos del trimestre (team, repo, owner, url,
+delegates, fecha de creación). Lo mantiene el script creador; `actualizar-repos-trimestre.ps1`
 lo lee para saber a qué repos pushear cambios de template.
 
 ## Al cerrar el trimestre
