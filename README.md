@@ -50,16 +50,31 @@ Clonados desde este repo al inicio del trimestre. Contienen:
 ## Flujo de trabajo por trimestre
 
 ### Fase 1: Setup inicial
-```powershell
-# 1. Define los 7 grupos
-$grupos = @("grupo-lecturas-1", "grupo-lecturas-2", ..., "grupo-lecturas-7")
 
-# 2. Script en este repo crea todos los repos y empuja template
-foreach ($grupo in $grupos) {
-    gh repo create $grupo --public --source=templates --clone
-    # empuja esquemas, tests, guía
-}
+No se conocen de antemano los usernames de GitHub de todo el curso, así que el modelo es
+**un delegado por equipo**: se invita solo al delegado con permiso `push`, y es él quien
+agrega al resto de su equipo como colaborador directamente desde GitHub (los conoce, tú no).
+
 ```
+trimestre-actual/
+├── grupo-lecturas-1/
+│   └── delegado.txt   # username de GitHub del delegado del equipo
+├── grupo-lecturas-2/
+│   └── delegado.txt
+└── ...
+```
+
+```powershell
+& ./scripts/crear-repos-trimestre.ps1 -Trimestre "2026-2"
+```
+
+El script:
+- Lee un equipo por cada subcarpeta de `trimestre-actual/`
+- Crea el repo público (bajo tu cuenta, nunca en organización) y le empuja `/templates` —
+  **solo si el repo no existe ya** (idempotente, no pisa trabajo de estudiantes)
+- Invita al delegado de `delegado.txt` como colaborador con permiso `push` ("editor")
+- Genera `invitaciones-<trimestre>.csv` con el link de invitación por equipo, para
+  compartirlo con el delegado (lo abre logueado con su cuenta y acepta)
 
 ### Fase 2: Trabajo de estudiantes (4-6 semanas)
 - Clonan su repo de grupo
@@ -161,7 +176,8 @@ Cada trimestre reutiliza este repo, agrega:
 
 ### Crear repos para un nuevo trimestre
 ```powershell
-& ./scripts/crear-repos-trimestre.ps1 -trimestre "2026-2" -grupos @("g1", "g2", ..., "g7")
+& ./scripts/crear-repos-trimestre.ps1 -Trimestre "2026-2"
+# equipos leídos de trimestre-actual/<nombre-equipo>/delegado.txt
 ```
 
 ### Corregir todos los grupos
