@@ -1,6 +1,6 @@
 [
   {
-    "team": "grupo-ejemplo",
-    "delegates": []
+    "team": "grupo-control",
+    "delegates": ["IsaacBakugan"]
   }
 ]
