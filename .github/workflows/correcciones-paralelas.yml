@@ -1,0 +1,12 @@
+name: correcciones-paralelas
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "0 0 * * 0" # TODO: definir schedule si aplica
+
+jobs:
+  corregir:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "TODO clona repos de grupo, corre tests, ejecuta calificador.ts y genera informe"

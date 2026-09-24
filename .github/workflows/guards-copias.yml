@@ -1,0 +1,10 @@
+name: guards-copias
+
+on:
+  workflow_dispatch:
+
+jobs:
+  detectar-similitud:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "TODO clona repos de grupo, computa similitud entre respuestas, reporta sin fallar el build"

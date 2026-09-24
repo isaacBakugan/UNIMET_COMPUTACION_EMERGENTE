@@ -1,0 +1,10 @@
+name: exportar-moodle
+
+on:
+  workflow_dispatch:
+
+jobs:
+  exportar:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "TODO (opcional) corre exportar-moodle.ts contra el informe generado"

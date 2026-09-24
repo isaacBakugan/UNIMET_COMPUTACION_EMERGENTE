@@ -31,8 +31,8 @@
 ### 1. **Repo Central** (`este`)
 Fuente de verdad que persiste. Contiene:
 
-- **`/formatos`**: esquemas de pregunta (V/F, selección múltiple, respuesta corta), validadores JSON
-- **`/correcciones`**: lógica de evaluación, rúbricas, scripts que califican
+- **`/formatos`**: esquemas de pregunta (V/F, selección múltiple, respuesta corta), validadores JSON (Python)
+- **`/correcciones`**: lógica de evaluación, rúbricas, scripts que califican (Python)
 - **`/guias`**: instrucciones por tarea, rubrica de evaluacion, criterios de validación
 - **`/.github/workflows`**: 
   - `correcciones-paralelas.yml`: trigueá manualmente o en schedule, corre tests en todos los repos de grupos, genera informe
@@ -44,7 +44,7 @@ Clonados desde este repo al inicio del trimestre. Contienen:
 
 - Copia del `/templates` y esquemas de validación
 - `preguntas.json` o similar: respuestas del grupo (generadas por ellos)
-- `tests/` locales: validadores que pueden correr con `npm test` o equivalente
+- `tests/` locales: validadores que pueden correr con `pytest`
 - Historial de commits: quién escribió qué, cuándo
 
 ## Flujo de trabajo por trimestre
@@ -64,7 +64,7 @@ foreach ($grupo in $grupos) {
 ### Fase 2: Trabajo de estudiantes (4-6 semanas)
 - Clonan su repo de grupo
 - Agregan preguntas en el formato requerido
-- Corren `npm test` o `pytest` localmente para validar
+- Corren `pytest` localmente para validar
 - Hacen commits y push
 - GitHub guarda todo: timestamps, autores, contenido
 
@@ -129,11 +129,11 @@ Cada trimestre reutiliza este repo, agrega:
 ├── formatos/
 │   ├── pregunta-vf.schema.json
 │   ├── pregunta-multiple.schema.json
-│   └── validador.ts
+│   └── validador.py
 ├── correcciones/
-│   ├── rubrica.ts
-│   ├── calificador.ts
-│   └── exportar-moodle.ts
+│   ├── rubrica.py
+│   ├── calificador.py
+│   └── exportar_moodle.py
 ├── guias/
 │   ├── trimestre-2026-2/
 │   │   ├── tarea-1-lecturas.md
@@ -143,10 +143,10 @@ Cada trimestre reutiliza este repo, agrega:
 │       └── ...
 ├── templates/
 │   ├── preguntas.json (structure)
-│   ├── package.json (deps para correr tests)
+│   ├── requirements.txt (deps para correr tests, pytest)
 │   └── tests/
-│       ├── validar-formato.test.ts
-│       └── validar-duplicados.test.ts
+│       ├── test_validar_formato.py
+│       └── test_validar_duplicados.py
 ├── .github/workflows/
 │   ├── correcciones-paralelas.yml
 │   ├── guards-copias.yml
@@ -154,7 +154,7 @@ Cada trimestre reutiliza este repo, agrega:
 └── scripts/
     ├── crear-repos-trimestre.ps1
     ├── clonar-todos.sh
-    └── reportar-infracciones.ts
+    └── reportar_infracciones.py
 ```
 
 ## Comandos comunes
