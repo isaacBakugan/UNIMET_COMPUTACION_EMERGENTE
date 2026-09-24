@@ -37,12 +37,12 @@ Fuente de verdad que persiste. Contiene:
 - **`/.github/workflows`**: 
   - `correcciones-paralelas.yml`: trigueá manualmente o en schedule, corre tests en todos los repos de grupos, genera informe
   - `guards-copias.yml`: detecta similitud anómala entre respuestas, reporta sospechas
-- **`/templates`**: estructura inicial que se clona a cada repo de grupo al inicio del trimestre
+- **`/repo-template`**: estructura inicial que se clona/sincroniza a cada repo de grupo
 
 ### 2. **Repos de Grupo** (1 por grupo, públicos)
 Clonados desde este repo al inicio del trimestre. Contienen:
 
-- Copia del `/templates` y esquemas de validación
+- Copia del `/repo-template` y esquemas de validación
 - `preguntas.json` o similar: respuestas del grupo (generadas por ellos)
 - `tests/` locales: validadores que pueden correr con `pytest`
 - Historial de commits: quién escribió qué, cuándo
@@ -70,11 +70,27 @@ trimestre-actual/
 
 El script:
 - Lee un equipo por cada subcarpeta de `trimestre-actual/`
-- Crea el repo público (bajo tu cuenta, nunca en organización) y le empuja `/templates` —
+- Crea el repo público (bajo tu cuenta, nunca en organización) y le empuja `/repo-template` —
   **solo si el repo no existe ya** (idempotente, no pisa trabajo de estudiantes)
 - Invita al delegado de `delegado.txt` como colaborador con permiso `push` ("editor")
 - Genera `invitaciones-<trimestre>.csv` con el link de invitación por equipo, para
   compartirlo con el delegado (lo abre logueado con su cuenta y acepta)
+- Deja `trimestre-actual/estado.json` con los repos activos (equipo, repo, owner, url,
+  delegados, fecha de creación)
+
+### Actualizar el template en repos ya creados
+
+Cuando cambias algo en `/repo-template` (un test nuevo, una guía) a mitad de trimestre:
+
+```powershell
+& ./scripts/actualizar-repos-trimestre.ps1
+```
+
+Lee `trimestre-actual/estado.json`, clona/actualiza cada repo activo, sincroniza el
+template **preservando `preguntas.json`** (nunca pisa las respuestas ya subidas) y solo
+commitea/pushea si hay diferencias reales (idempotente). Corre local con `gh`/`git`, no
+como GitHub Action, para no tener que guardar un token de escritura amplio como secret en
+el repo central.
 
 ### Fase 2: Trabajo de estudiantes (4-6 semanas)
 - Clonan su repo de grupo
@@ -141,6 +157,7 @@ Cada trimestre reutiliza este repo, agrega:
 ```
 .
 ├── README.md (este)
+├── .gitignore
 ├── formatos/
 │   ├── pregunta-vf.schema.json
 │   ├── pregunta-multiple.schema.json
@@ -156,18 +173,24 @@ Cada trimestre reutiliza este repo, agrega:
 │   │   └── criterios.md
 │   └── trimestre-2026-3/
 │       └── ...
-├── templates/
+├── repo-template/
 │   ├── preguntas.json (structure)
 │   ├── requirements.txt (deps para correr tests, pytest)
 │   └── tests/
 │       ├── test_validar_formato.py
 │       └── test_validar_duplicados.py
+├── trimestre-actual/
+│   ├── README.md (convención de esta carpeta)
+│   ├── estado.json (repos activos, lo mantiene crear-repos-trimestre.ps1)
+│   └── grupo-ejemplo/
+│       └── delegado.txt (placeholder)
 ├── .github/workflows/
 │   ├── correcciones-paralelas.yml
 │   ├── guards-copias.yml
 │   └── exportar-moodle.yml (opcional)
 └── scripts/
     ├── crear-repos-trimestre.ps1
+    ├── actualizar-repos-trimestre.ps1
     ├── clonar-todos.sh
     └── reportar_infracciones.py
 ```
@@ -178,6 +201,12 @@ Cada trimestre reutiliza este repo, agrega:
 ```powershell
 & ./scripts/crear-repos-trimestre.ps1 -Trimestre "2026-2"
 # equipos leídos de trimestre-actual/<nombre-equipo>/delegado.txt
+```
+
+### Pushear cambios de template a los repos activos
+```powershell
+& ./scripts/actualizar-repos-trimestre.ps1
+# lee trimestre-actual/estado.json, preserva preguntas.json de cada equipo
 ```
 
 ### Corregir todos los grupos

@@ -1,0 +1,3 @@
+# Placeholder de ejemplo. Copia esta carpeta con el nombre real del equipo y descomenta
+# la línea de abajo con el username de GitHub del delegado.
+# username-del-delegado

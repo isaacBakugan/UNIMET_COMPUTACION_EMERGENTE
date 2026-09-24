@@ -1,7 +1,11 @@
 <#
     Crea los repos de grupo de un trimestre (públicos, bajo la cuenta personal de GitHub,
-    NO bajo una organización), les empuja el contenido de /templates y agrega como colaborador
-    con permiso "editor" (push) al DELEGADO de cada equipo.
+    NO bajo una organización), les empuja el contenido de /repo-template y agrega como
+    colaborador con permiso "editor" (push) al DELEGADO de cada equipo.
+
+    Deja trimestre-actual/estado.json con los repos activos del trimestre (equipo, repo,
+    owner, url, delegados, fecha de creación). Ese archivo es el que usa
+    scripts/actualizar-repos-trimestre.ps1 para saber a qué repos pushear cambios de template.
 
     No se conocen de antemano los usernames de todos los estudiantes, así que no se invita
     al curso completo: se invita solo al delegado de cada equipo, y es el delegado quien
@@ -46,7 +50,7 @@ param(
     [string]$DestinoLocal = "$PSScriptRoot/../.repos-trimestre-$Trimestre",
 
     # Carpeta con el template a empujar a cada repo nuevo (esquemas, tests, guía)
-    [string]$TemplatesPath = "$PSScriptRoot/../templates",
+    [string]$TemplatesPath = "$PSScriptRoot/../repo-template",
 
     # Si se pasa, solo imprime las acciones sin ejecutarlas
     [switch]$DryRun
@@ -72,7 +76,15 @@ if (-not (Test-Path $DestinoLocal)) {
     New-Item -ItemType Directory -Path $DestinoLocal | Out-Null
 }
 
+$estadoPath = Join-Path $InsumosPath "estado.json"
+$estadoPrevio = @{}
+if (Test-Path $estadoPath) {
+    $crudo = Get-Content $estadoPath -Raw | ConvertFrom-Json
+    foreach ($item in $crudo) { $estadoPrevio[$item.repo] = $item }
+}
+
 $reporte = @()
+$estadoNuevo = @()
 
 foreach ($equipo in $equipos) {
 
@@ -153,6 +165,27 @@ foreach ($equipo in $equipos) {
             Invitacion = $linkInvitacion
         }
     }
+
+    if (-not $DryRun) {
+        $creadoEn = if ($estadoPrevio.ContainsKey($nombreRepo)) { $estadoPrevio[$nombreRepo].creadoEn } else { (Get-Date).ToUniversalTime().ToString("o") }
+
+        $estadoNuevo += [PSCustomObject]@{
+            equipo     = $grupo
+            repo       = $nombreRepo
+            owner      = $Owner
+            url        = "https://github.com/$Owner/$nombreRepo"
+            trimestre  = $Trimestre
+            delegados  = $delegados
+            creadoEn   = $creadoEn
+            estado     = "activo"
+        }
+    }
+}
+
+if (-not $DryRun) {
+    $estadoNuevo | ConvertTo-Json -Depth 4 | Set-Content -Path $estadoPath -Encoding UTF8
+    Write-Host ""
+    Write-Host "Estado del trimestre guardado en: $estadoPath" -ForegroundColor Green
 }
 
 $csvPath = Join-Path $DestinoLocal "invitaciones-$Trimestre.csv"
