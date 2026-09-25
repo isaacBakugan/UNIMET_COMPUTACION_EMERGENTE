@@ -1,10 +1,103 @@
-﻿{
-    "team":  "grupo-control",
-    "repo":  "grupo-control-2627-1",
-    "owner":  "isaacBakugan",
-    "url":  "https://github.com/isaacBakugan/grupo-control-2627-1",
-    "term":  "2627-1",
-    "delegates":  "IsaacBakugan",
-    "createdAt":  "2026-09-24T04:18:01.7101184Z",
-    "status":  "active"
-}
+﻿[
+    {
+        "team":  "grupo-control",
+        "repo":  "grupo-control-2627-1",
+        "owner":  "isaacBakugan",
+        "url":  "https://github.com/isaacBakugan/grupo-control-2627-1",
+        "term":  "2627-1",
+        "delegates":  "IsaacBakugan",
+        "createdAt":  "2026-09-24T04:18:01.7101184Z",
+        "status":  "active"
+    },
+    {
+        "team":  "LUMON",
+        "repo":  "LUMON-2627-1",
+        "owner":  "isaacBakugan",
+        "url":  "https://github.com/isaacBakugan/LUMON-2627-1",
+        "term":  "2627-1",
+        "delegates":  [
+                          "alexramirezxo",
+                          "arruejulene"
+                      ],
+        "createdAt":  "2026-09-25T14:27:59.7177151Z",
+        "status":  "active"
+    },
+    {
+        "team":  "areperos",
+        "repo":  "areperos-2627-1",
+        "owner":  "isaacBakugan",
+        "url":  "https://github.com/isaacBakugan/areperos-2627-1",
+        "term":  "2627-1",
+        "delegates":  [
+                          "SamGRT",
+                          "arruejulene"
+                      ],
+        "createdAt":  "2026-09-25T14:28:06.6983800Z",
+        "status":  "active"
+    },
+    {
+        "team":  "Resuelve",
+        "repo":  "Resuelve-2627-1",
+        "owner":  "isaacBakugan",
+        "url":  "https://github.com/isaacBakugan/Resuelve-2627-1",
+        "term":  "2627-1",
+        "delegates":  [
+                          "tomasparaco",
+                          "arruejulene"
+                      ],
+        "createdAt":  "2026-09-25T14:28:13.5898591Z",
+        "status":  "active"
+    },
+    {
+        "team":  "Innova",
+        "repo":  "Innova-2627-1",
+        "owner":  "isaacBakugan",
+        "url":  "https://github.com/isaacBakugan/Innova-2627-1",
+        "term":  "2627-1",
+        "delegates":  [
+                          "Diegomri",
+                          "arruejulene"
+                      ],
+        "createdAt":  "2026-09-25T14:28:20.8303642Z",
+        "status":  "active"
+    },
+    {
+        "team":  "Aris",
+        "repo":  "Aris-2627-1",
+        "owner":  "isaacBakugan",
+        "url":  "https://github.com/isaacBakugan/Aris-2627-1",
+        "term":  "2627-1",
+        "delegates":  [
+                          "maximomjp",
+                          "arruejulene"
+                      ],
+        "createdAt":  "2026-09-25T14:28:26.9817182Z",
+        "status":  "active"
+    },
+    {
+        "team":  "G1",
+        "repo":  "G1-2627-1",
+        "owner":  "isaacBakugan",
+        "url":  "https://github.com/isaacBakugan/G1-2627-1",
+        "term":  "2627-1",
+        "delegates":  [
+                          "GiselleEsclasans",
+                          "arruejulene"
+                      ],
+        "createdAt":  "2026-09-25T14:28:33.0567377Z",
+        "status":  "active"
+    },
+    {
+        "team":  "Cyberleak",
+        "repo":  "Cyberleak-2627-1",
+        "owner":  "isaacBakugan",
+        "url":  "https://github.com/isaacBakugan/Cyberleak-2627-1",
+        "term":  "2627-1",
+        "delegates":  [
+                          "richardyradyf",
+                          "arruejulene"
+                      ],
+        "createdAt":  "2026-09-25T14:28:40.7743409Z",
+        "status":  "active"
+    }
+]
