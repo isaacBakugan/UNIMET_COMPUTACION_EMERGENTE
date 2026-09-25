@@ -59,8 +59,7 @@ central.
 
 ## Cómo se entrega
 
-- El programa va en **`perceptron.py`**, en esta misma carpeta — ese es el archivo que
-  se corrige.
+- El programa va en **`perceptron_1.py`, `perceptron_2.py`, o `perceptron_3.py`**, dependiendo de tu elección, en esta misma carpeta — esos son los archivos que se corrigen (uno por integrante).
 - `assets/` trae los datasets reales (columnas `x1,x2,y`, con encabezado) con los que
   deben correr su perceptrón:
   - `no_separables.csv`
@@ -71,11 +70,15 @@ central.
 
 ## Cómo se valida
 
-`tests/test_validar_tarea_1.py` es un chequeo de formato, no de correctitud del
-perceptrón (eso lo evalúa la rúbrica de arriba en el repo central):
+Hay dos pruebas de validación que chequean el formato localmente (la correctitud la evalúa la rúbrica):
 
-- Que exista `perceptron.py`
+- **Validación del equipo**: Chequea que existan los 3 archivos y compilen.
+  Para correrla: `pytest tarea-1-codigo/tests/test_validar_tarea_equipo.py`
+- **Validación individual**: Chequea exclusivamente tu archivo.
+  Para correrla en PowerShell, debes indicar qué archivo validar usando una variable de entorno. Por ejemplo:
+  `$env:PERCEPTRON_FILE="perceptron_1.py"; pytest tarea-1-codigo/tests/test_validar_tarea_individual.py`
+
+En ambos casos se revisa:
+- Que exista el archivo correspondiente
 - Que sea Python válido (compila)
 - Que no importe ninguna librería fuera de `matplotlib`
-
-Corran `pytest tarea-1-codigo/tests/` antes de subir.

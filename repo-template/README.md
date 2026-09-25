@@ -9,14 +9,17 @@ a este mismo repo, no un repo nuevo por tarea.
 - **`preguntas.json`**: donde va el contenido de la tarea (respuestas del equipo). El
   formato exacto y los criterios están en la guía de la tarea correspondiente, en el repo
   central del curso.
+- **`perceptron_1.py`, `perceptron_2.py`, `perceptron_3.py`**: archivos base para la tarea del perceptrón.
 - **`tests/`**: validadores que corren localmente antes de subir nada.
 - **`requirements.txt`**: dependencias para correr los tests.
 
 ## Cómo trabajar
 
+**⚠️ ATENCIÓN: Esta tarea es estrictamente INDIVIDUAL.** A pesar de que comparten el repositorio como equipo, el desarrollo del perceptrón debe hacerlo cada quien por su cuenta.
+
 1. Clona este repo.
 2. Instala dependencias: `pip install -r requirements.txt`
-3. Edita `preguntas.json` con las respuestas de tu equipo.
+3. Elijan un archivo de perceptrón (`perceptron_1.py`, `perceptron_2.py` o `perceptron_3.py`) cada uno. **IMPORTANTE:** Deben colocar su nombre y cédula en la parte superior del archivo para que esté debidamente identificado, y realizar su tarea allí.
 4. Corre los tests localmente antes de subir: `pytest`
 5. Si los tests pasan, commit y push.
 

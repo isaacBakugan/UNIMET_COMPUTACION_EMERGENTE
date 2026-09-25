@@ -2,5 +2,33 @@
   {
     "team": "grupo-control",
     "delegates": ["IsaacBakugan"]
+  },
+  {
+    "team": "LUMON",
+    "delegates": ["alexramirezxo", "arruejulene"]
+  },
+  {
+    "team": "areperos",
+    "delegates": ["SamGRT", "arruejulene"]
+  },
+  {
+    "team": "Resuelve",
+    "delegates": ["tomasparaco", "arruejulene"]
+  },
+  {
+    "team": "Innova",
+    "delegates": ["Diegomri", "arruejulene"]
+  },
+  {
+    "team": "Aris",
+    "delegates": ["maximomjp", "arruejulene"]
+  },
+  {
+    "team": "G1",
+    "delegates": ["GiselleEsclasans", "arruejulene"]
+  },
+  {
+    "team": "Cyberleak",
+    "delegates": ["richardyradyf", "arruejulene"]
   }
 ]
