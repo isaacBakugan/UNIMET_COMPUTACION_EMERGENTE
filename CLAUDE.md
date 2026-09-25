@@ -30,9 +30,7 @@ sino estructura en inglés / contenido humano en español.
 - **`repo-template/` es lo único que ven los estudiantes**: cualquier archivo ahí se
   pushea a cada repo de grupo. `trimestre-actual/` y el resto del repo central son
   operativos, para el profesor, y nunca se pushean tal cual.
-- **`preguntas.json` nunca se sobreescribe** una vez que el equipo lo llenó — es la
-  respuesta real, no el placeholder del template. Ver `PreservedFiles` en
-  `actualizar-repos-trimestre.ps1`.
+- **Los entregables de los alumnos nunca se sobreescriben**: archivos como `preguntas.json` o `perceptron_X.py` son la respuesta real del estudiante, no solo un placeholder del template. **Regla de oro:** Conforme se publiquen nuevas tareas, DEBES agregar los nombres de sus archivos a la lista `$PreservedFiles` dentro de `scripts/actualizar-repos-trimestre.ps1`.
 - **Repos siempre públicos, nunca en organización** (`gh repo create ... --public`, sin
   `--org`).
 - Un test/gate nuevo que valide formato de un entregable debe fallar en rojo cuando no hay
