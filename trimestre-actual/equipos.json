@@ -13,11 +13,11 @@
   },
   {
     "team": "Resuelve",
-    "delegates": ["tomasparaco", "arruejulene", "Arturop0805"]
+    "delegates": ["tomasparaco", "arruejulene", "Arturop0805", "chrisx1610"]
   },
   {
     "team": "Innova",
-    "delegates": ["Diegomri", "arruejulene", "JonathanSarli"]
+    "delegates": ["Diegomri", "arruejulene", "JonathanSarli", "GabrielJimenez12"]
   },
   {
     "team": "Aris",
@@ -29,6 +29,6 @@
   },
   {
     "team": "Cyberleak",
-    "delegates": ["richardyradyf", "arruejulene"]
+    "delegates": ["richardyradyf", "arruejulene", "luisr0514", "AndrewA5"]
   }
 ]
