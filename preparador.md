@@ -100,8 +100,9 @@ Los resultados quedan en `correcciones/resultados/<trimestre>/<tarea>/`:
 > `calificador.py --update` depende de `tareas/verify_submissions.py`, que hoy tiene el trimestre `2627-1` y un CSV de
 > invitaciones fijos en el código. Para refrescar clones en otra máquina usa el paso 1 de arriba.
 
-Tareas futuras: ver [correcciones/tarea-2/README.md](correcciones/tarea-2/README.md) (configuración y directrices ya
-dejadas; el corrector está pendiente).
+Tareas futuras: ver [correcciones/tarea-2/README.md](correcciones/tarea-2/README.md) y
+[correcciones/tarea-3/README.md](correcciones/tarea-3/README.md) (configuración y directrices ya dejadas; los
+correctores están pendientes).
 
 ## 4. Convenciones ya probadas (Tarea 1): se siguen, no se reinventan
 

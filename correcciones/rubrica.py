@@ -18,6 +18,16 @@ CASE_KEYS = ("given_separable", "given_non_separable", "hidden_separable", "hidd
 OUTCOMES = ("correct", "incorrect", "no_result")
 
 
+def criterion_outcomes(item: dict) -> tuple[str, ...]:
+    """Outcome names of a criterion, best first. Defaults to the 3-level scale (Tareas 1 and 2);
+    a criterion with more levels (Tarea 3) declares them in an `outcomes` list."""
+    return tuple(item.get("outcomes", OUTCOMES))
+
+
+def _strictly_descending(values: list) -> bool:
+    return all(a > b for a, b in zip(values, values[1:]))
+
+
 @dataclass(frozen=True)
 class Rubric:
     name: str
@@ -36,7 +46,7 @@ class Rubric:
 
     @property
     def max_points(self) -> int:
-        return sum(item["correct"] for item in self.criteria.values())
+        return sum(item[criterion_outcomes(item)[0]] for item in self.criteria.values())
 
 
 def load_rubric(path: Path) -> Rubric:
@@ -46,9 +56,22 @@ def load_rubric(path: Path) -> Rubric:
     if not keys or len(set(keys)) != len(keys):
         raise ValueError(f"The rubric needs at least one criterion and unique keys: {keys}")
     for item in items:
-        scores = [item[outcome] for outcome in OUTCOMES]
-        if not all(type(score) is int for score in scores) or not scores[0] > scores[1] > scores[2] >= 0:
-            raise ValueError(f"Invalid scale in criterion {item['key']}: need correct > incorrect > no_result >= 0")
+        outcomes = criterion_outcomes(item)
+        if len(set(outcomes)) != len(outcomes) or len(outcomes) < 2:
+            raise ValueError(f"Invalid outcomes in criterion {item['key']}: need at least 2 unique names")
+        scores = [item[outcome] for outcome in outcomes]
+        if not all(type(score) is int for score in scores) or not _strictly_descending(scores) or scores[-1] < 0:
+            raise ValueError(f"Invalid scale in criterion {item['key']}: need {' > '.join(outcomes)} >= 0")
+        # Optional metric thresholds (exclusive lower bound to reach each level), keyed by outcome
+        # in scale order. The levels below the last threshold depend on whether the program ran.
+        thresholds = item.get("thresholds")
+        if thresholds is not None:
+            expected_keys = [outcome for outcome in outcomes if outcome in thresholds]
+            values = list(thresholds.values())
+            if not values or list(thresholds) != expected_keys or not _strictly_descending(values) \
+                    or not all(0 <= value < 1 for value in values):
+                raise ValueError(f"Invalid thresholds in criterion {item['key']}: need values in [0, 1) "
+                                 "descending, keyed by outcome in scale order")
         if not item.get("description"):
             raise ValueError(f"Missing description in criterion {item['key']}")
     if not 0 <= config["minimum_grade"] < config["maximum_grade"]:

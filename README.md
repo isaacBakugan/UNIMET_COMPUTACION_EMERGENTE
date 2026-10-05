@@ -257,6 +257,10 @@ La columna **Revisar** marca los casos donde el criterio es visual y conviene ab
 orden alfabético, reporte en consola + `notas-sheets.csv` para copiar a Sheets) están en
 [correcciones/tarea-2/README.md](correcciones/tarea-2/README.md).
 
+### Corregir la Tarea 3 (PyTorch)
+**Pendiente de implementar por la preparadora.** Rúbrica de 5 niveles por accuracy, contrato de los `.pth` y
+directrices en [correcciones/tarea-3/README.md](correcciones/tarea-3/README.md).
+
 ### Corregir el corte de preguntas 1 y obtener las notas
 ```powershell
 python correcciones/calificador_corte.py            # nota de todos los equipos y estudiantes

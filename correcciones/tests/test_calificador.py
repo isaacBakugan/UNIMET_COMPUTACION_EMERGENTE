@@ -90,6 +90,29 @@ def test_rubric_rejects_an_inverted_scale(tmp_path):
         load_rubric(write_rubric(tmp_path, criteria=config["criteria"]))
 
 
+def test_tarea_3_five_level_scale_grades_from_the_best_and_worst_outcomes():
+    rubric = load_rubric(CORRECTIONS_DIR / "tarea-3" / "tarea.json")
+    assert set(rubric.criteria) == {"original_rectangular", "original_convolutional",
+                                    "simplified_rectangular", "simplified_convolutional"}
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "great_majority")) == (100, 20)
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "no_result")) == (0, rubric.minimum_grade)
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "majority"))[0] == 60
+
+
+@pytest.mark.parametrize("change", [
+    {"majority": 30},                                           # inverted points scale
+    {"thresholds": {"great_majority": 0.5, "majority": 0.75}},  # ascending thresholds
+    {"thresholds": {"great_majority": 1.0}},                    # unreachable level
+    {"thresholds": {"majority": 0.5, "great_majority": 0.75}},  # not in scale order
+    {"thresholds": {"unknown_level": 0.5}},                     # outcome outside the scale
+], ids=["inverted-points", "ascending", "unreachable", "out-of-order", "unknown-level"])
+def test_rubric_rejects_a_broken_five_level_scale(tmp_path, change):
+    config = json.loads((CORRECTIONS_DIR / "tarea-3" / "tarea.json").read_text(encoding="utf-8"))
+    config["criteria"][0].update(change)
+    with pytest.raises(ValueError):
+        load_rubric(write_rubric(tmp_path, criteria=config["criteria"]))
+
+
 # --- Case scoring ---
 
 def test_color_category_tolerates_shades():

@@ -137,11 +137,27 @@ Umbrales de *accuracy*:
 - **El notebook debe ejecutarse de arriba hacia abajo** (*Restart & Run All*) sin errores y
   terminar en el **menú**. Antes de hacer commit, corre *Restart & Run All* una vez y
   comprueba que todo funciona desde cero.
-- Tu programa debe ser capaz de **cargar tus propios archivos `.pth`**. Para que eso sea
-  posible sin depender de variables del notebook, **guarda junto a los pesos los datos
-  necesarios para reconstruir la red** (por ejemplo, un `dict` con `state_dict` y los
-  hiperparámetros: tipo de red, capas ocultas, neuronas por capa, épocas acumuladas,
-  clasificación original/simplificada y las opciones de optimización activas).
+- Tu programa debe ser capaz de **cargar tus propios archivos `.pth`**.
+
+### Contrato de los archivos `.pth`
+
+La corrección carga tus `.pth` **sin ejecutar tu notebook** (el menú pide `input()` y no se
+puede automatizar), así que todos deben cumplir lo mismo:
+
+- Se guardan con `torch.save({"state_dict": model.state_dict(), "hyperparameters": {...}}, path)`.
+  Los `hyperparameters` incluyen al menos: tipo de red, capas ocultas, neuronas por capa,
+  épocas acumuladas, clasificación (`original` / `simplified`) y las optimizaciones activas.
+- El modelo es un **`nn.Sequential`** que empieza en `nn.Flatten()` y usa solo `nn.Linear`,
+  `nn.ReLU`, `nn.BatchNorm1d` y `nn.Dropout`. La corrección reconstruye la red a partir de las
+  formas del `state_dict`.
+- La entrada son los píxeles de `transforms.ToTensor()` (rango `[0, 1]`), **sin `Normalize`
+  fuera del modelo**. Si quieres normalizar, hazlo dentro del `Sequential`.
+- **Orden de las neuronas de salida:**
+  - 10 clases: el orden nativo de Fashion MNIST (`0` = T-shirt/top ... `9` = Ankle boot).
+  - 4 clases: `0` = Top, `1` = Bottom, `2` = Footwear, `3` = Bag.
+
+> En este enunciado "convolucional" **no** significa capas `Conv2d`: es la arquitectura de
+> embudo definida por interpolación lineal del número de neuronas.
 
 ### Dataset
 
