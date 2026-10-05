@@ -1,0 +1,68 @@
+{
+  "name": "Tarea 4: algoritmo genético",
+  "cutoff": "2099-12-31T23:59:00-04:00",
+  "minimum_grade": 1,
+  "maximum_grade": 20,
+  "late_penalty_points": 2,
+  "excluded_teams": [
+    "grupo-control"
+  ],
+  "criteria": [
+    {
+      "key": "low_mutation_function_a",
+      "description": "La población entrenada con baja variabilidad de mutación (< 1) sobre la función a tiene una distribución adecuada",
+      "outcomes": [
+        "adequate",
+        "inadequate_params",
+        "inadequate_problem",
+        "no_result"
+      ],
+      "adequate": 20,
+      "inadequate_params": 14,
+      "inadequate_problem": 7,
+      "no_result": 0
+    },
+    {
+      "key": "high_mutation_function_a",
+      "description": "La población entrenada con alta variabilidad de mutación (> 1) sobre la función a tiene una distribución adecuada",
+      "outcomes": [
+        "adequate",
+        "inadequate_params",
+        "inadequate_problem",
+        "no_result"
+      ],
+      "adequate": 20,
+      "inadequate_params": 14,
+      "inadequate_problem": 7,
+      "no_result": 0
+    },
+    {
+      "key": "low_mutation_function_b",
+      "description": "La población entrenada con baja variabilidad de mutación (< 1) sobre la función b tiene una distribución adecuada",
+      "outcomes": [
+        "adequate",
+        "inadequate_params",
+        "inadequate_problem",
+        "no_result"
+      ],
+      "adequate": 30,
+      "inadequate_params": 20,
+      "inadequate_problem": 10,
+      "no_result": 0
+    },
+    {
+      "key": "high_mutation_function_b",
+      "description": "La población entrenada con alta variabilidad de mutación (> 1) sobre la función b tiene una distribución adecuada",
+      "outcomes": [
+        "adequate",
+        "inadequate_params",
+        "inadequate_problem",
+        "no_result"
+      ],
+      "adequate": 30,
+      "inadequate_params": 20,
+      "inadequate_problem": 10,
+      "no_result": 0
+    }
+  ]
+}

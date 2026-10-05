@@ -113,6 +113,20 @@ def test_rubric_rejects_a_broken_five_level_scale(tmp_path, change):
         load_rubric(write_rubric(tmp_path, criteria=config["criteria"]))
 
 
+def test_tarea_4_weights_each_criterion_by_its_own_scale():
+    rubric = load_rubric(CORRECTIONS_DIR / "tarea-4" / "tarea.json")
+    assert tuple(rubric.criteria) == ("low_mutation_function_a", "high_mutation_function_a",
+                                      "low_mutation_function_b", "high_mutation_function_b")
+    assert rubric.max_points == 100
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "adequate")) == (100, 20)
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "no_result")) == (0, rubric.minimum_grade)
+    # Function b weighs 30% per population, function a 20%: losing b costs more than losing a.
+    only_a_adequate = {key: "adequate" if key.endswith("function_a") else "no_result" for key in rubric.criteria}
+    only_b_adequate = {key: "adequate" if key.endswith("function_b") else "no_result" for key in rubric.criteria}
+    assert rubric_grade(rubric, only_a_adequate)[0] == 40
+    assert rubric_grade(rubric, only_b_adequate)[0] == 60
+
+
 # --- Case scoring ---
 
 def test_color_category_tolerates_shades():
