@@ -44,7 +44,7 @@ de todos los estudiantes y deja en `correcciones/resultados/<trimestre>/tarea-1/
 `notas.csv`, `informe.md` y `notas-sheets.csv`. Detalle de uso en [README.md](README.md).
 
 - **Las notas se entregan en orden alfabético por apellido.** La fuente de ese orden es
-  `correcciones/tarea-N/lista-entrega.csv` (`last_name,first_name,team`, ya ordenada). Reporte de consola,
+  `trimestre-actual/lista-entrega.csv` (`last_name,first_name,team`, ya ordenada). Reporte de consola,
   `informe.md`, `notas.csv` y `notas-sheets.csv` salen **siempre** en ese orden; nunca por equipo ni por archivo.
 - `notas-sheets.csv` (`Apellido,Nombre,Equipo,Nota,Observación`) es el que se copia a Google Sheets: la columna
   `Nota` se pega tal cual, alineada con la lista de la planilla.
@@ -53,7 +53,30 @@ de todos los estudiantes y deja en `correcciones/resultados/<trimestre>/tarea-1/
   (`assignment = by_team`): confirmar a mano y, cuando se conozca, corregir la cabecera/`alumnos.csv`.
 - Los nombres de equipo de `lista-entrega.csv` deben ser los de `trimestre-actual/estado.json` (`Cyberleak`,
   `areperos`, `LUMON`...); el gate de `correcciones/tests/test_lista.py` falla si hay un typo o el orden se rompe.
-- Tarea nueva = carpeta `correcciones/tarea-N/` con `tarea.json`, `lista-entrega.csv`, `alumnos.csv`,
+- Tarea nueva = carpeta `correcciones/tarea-N/` con `tarea.json`, `alumnos.csv`,
   `entregas-tardias.csv` y `decisiones-docente.json`: los gates la descubren por disco, sin registrarla en ningún lado.
 - Las decisiones docentes (`decisiones-docente.json`) van atadas a un commit exacto: si el estudiante pushea otro,
   caducan y el corrector avisa. Nunca se hardcodea un `if team == ...` en el código.
+
+## Corrección del corte de preguntas: las pruebas del alumno SON la evaluación
+
+`python correcciones/calificador_corte.py` (task `grade-corte`; `--update` hace `git fetch` de los repos primero)
+corrige `corte-preguntas-1` de todos los equipos. Misma salida que la Tarea 1 en
+`correcciones/resultados/<trimestre>/corte-preguntas-1/` (`notas.csv` por equipo, `notas-sheets.csv` por
+estudiante en orden alfabético, `informe.md`).
+
+- **Una sola fuente de verdad:** el corrector corre `repo-template/corte-preguntas-1/tests/test_validar_entregable_1.py`
+  (el mismo archivo que corren los alumnos) con `QUESTIONS_FILE` apuntando al `preguntas.json` del commit al cierre.
+  Nunca la copia del repo del alumno, que podrían editar. Cambiar una regla = editar ese test.
+- **Cada test debe pertenecer a un criterio de `correcciones/corte-preguntas-1/corte.json`** (4 criterios × 5 pts,
+  crédito proporcional). El gate en `correcciones/tests/test_corte.py` descubre los tests por AST y falla si agregas
+  un test sin asignarlo a un criterio (o si dejas uno obsoleto).
+- **La plantilla sin tocar debe sacar la nota mínima.** Los placeholders (`PONGAN AQUÍ`, `(edítenla)`) no cuentan como
+  preguntas, y `load_questions()` falla si no hay ninguna, para que nada pase "por vacuidad". Gate:
+  `test_gate_the_untouched_template_scores_the_minimum_grade`.
+- Cierre en `corte.json` (`cutoff`, zona -04:00). Se evalúa el último commit **anterior** al cierre; los commits
+  posteriores que tocan `corte-preguntas-1/` se reportan como entrega tardía y no se evalúan (salvo que se acepten
+  en `entregas-tardias.csv`, con commit exacto y descuento).
+- Alcance de la regla de fáciles (< 3) / difíciles (> 7): constante `DIFFICULTY_SCOPE` del test (`"total"` o `"reading"`).
+- La lista de entrega alfabética (`trimestre-actual/lista-entrega.csv`) es del trimestre y la comparten todas las
+  correcciones; en el corte cada integrante recibe la nota de su equipo.

@@ -1,0 +1,51 @@
+{
+  "name": "Corte de preguntas 1",
+  "cutoff": "2026-10-04T23:59:59-04:00",
+  "minimum_grade": 1,
+  "maximum_grade": 20,
+  "folder": "corte-preguntas-1",
+  "deliverable": "preguntas.json",
+  "test_file": "repo-template/corte-preguntas-1/tests/test_validar_entregable_1.py",
+  "excluded_teams": ["grupo-control"],
+  "criteria": [
+    {
+      "key": "format",
+      "description": "Formato correcto",
+      "points": 5,
+      "tests": [
+        "test_file_exists_and_is_valid_json",
+        "test_required_fields_present",
+        "test_reading_is_valid",
+        "test_types_are_valid",
+        "test_statements_are_not_empty",
+        "test_statements_are_not_duplicated",
+        "test_correct_option_is_in_options",
+        "test_true_false_has_the_2_correct_options",
+        "test_multiple_choice_has_at_least_3_options",
+        "test_difficulty_level_is_an_integer_between_1_and_10"
+      ]
+    },
+    {
+      "key": "count",
+      "description": "Todas las preguntas solicitadas (40: 10 por lectura, 5 V/F + 5 selección)",
+      "points": 5,
+      "tests": [
+        "test_there_are_exactly_40_questions",
+        "test_no_template_placeholders_left",
+        "test_reading_has_10_questions_5_true_false_and_5_multiple_choice"
+      ]
+    },
+    {
+      "key": "easy",
+      "description": "Al menos 2 preguntas fáciles (dificultad < 3)",
+      "points": 5,
+      "tests": ["test_has_at_least_2_easy_questions"]
+    },
+    {
+      "key": "hard",
+      "description": "Al menos 2 preguntas difíciles (dificultad > 7)",
+      "points": 5,
+      "tests": ["test_has_at_least_2_hard_questions"]
+    }
+  ]
+}

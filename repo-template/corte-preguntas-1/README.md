@@ -11,6 +11,9 @@
 
    Eso da **10 preguntas × 4 lecturas = 40 preguntas en total** para este corte
    (20 de Verdadero/Falso y 20 de selección simple).
+
+   Entre las 40, deben incluir **al menos 2 preguntas fáciles** (`difficulty_level` menor a 3,
+   es decir 1 o 2) y **al menos 2 difíciles** (`difficulty_level` mayor a 7, es decir 8, 9 o 10).
 3. Completen `preguntas.json` con sus 40 preguntas — **ese es el archivo que se corrige**.
    `ejemplo-preguntas.json` es solo referencia de formato (no trae las 40, solo un ejemplo
    por lectura), no se evalúa.
@@ -44,6 +47,17 @@ Vean `ejemplo-preguntas.json` para un ejemplo completo por cada lectura.
 - V/F tiene exactamente las opciones `Verdadero`/`Falso`
 - Selección simple tiene 3 o más opciones
 - `difficulty_level` es un entero entre 1 y 10
+- Al menos **2 preguntas fáciles** (nivel < 3) y **2 difíciles** (nivel > 7) en el archivo
+- Que no quede **ninguna pregunta con el texto de la plantilla** (`PONGAN AQUÍ ...`, `(edítenla)`):
+  una pregunta sin editar cuenta como una pregunta que falta, y un `preguntas.json` vacío o sin
+  editar no pasa ninguna prueba
 
 Que los tests pasen en verde **no significa que las preguntas estén bien hechas** — solo
 que el formato es correcto. El contenido lo evalúa la rúbrica del repo central.
+
+## Cómo se califica
+
+La nota (1 a 20) sale de ejecutar **estas mismas pruebas** sobre el `preguntas.json` del último
+commit anterior al cierre. Son 4 criterios de 5 puntos, proporcionales a las pruebas que pasan:
+formato correcto, todas las preguntas solicitadas, al menos 2 fáciles y al menos 2 difíciles.
+Los commits posteriores al cierre no se evalúan.

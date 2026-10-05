@@ -249,6 +249,26 @@ La columna **Revisar** marca los casos donde el criterio es visual y conviene ab
   exacto; si el estudiante pushea otro commit, la decisión caduca y el corrector avisa.
 - Los tests del corrector corren con `task test` (`pytest correcciones/tests`).
 
+### Corregir el corte de preguntas 1 y obtener las notas
+```powershell
+python correcciones/calificador_corte.py            # nota de todos los equipos y estudiantes
+python correcciones/calificador_corte.py --update   # trae antes los cambios de GitHub (git fetch)
+python correcciones/calificador_corte.py --team G1  # un solo equipo
+```
+Evalúa el `preguntas.json` del último commit anterior al cierre (`correcciones/corte-preguntas-1/corte.json`)
+con **las mismas pruebas unitarias que corren los alumnos** (`repo-template/corte-preguntas-1/tests/`),
+las ejecuta desde este repo (nunca la copia del alumno), marca los commits posteriores al cierre como
+**entrega tardía** y escribe en `correcciones/resultados/<trimestre>/corte-preguntas-1/`:
+`notas.csv` (por equipo), `notas-sheets.csv` (por estudiante, alfabético, para Google Sheets) e `informe.md`
+(qué pruebas fallaron y por qué). Si lo corres antes del cierre, el reporte sale marcado **PRELIMINAR**.
+
+- 4 criterios × 5 puntos: formato, 40 preguntas solicitadas, ≥2 fáciles (nivel < 3), ≥2 difíciles (nivel > 7).
+  Cada criterio es proporcional a las pruebas que pasan; mínimo 1, redondeo half-up.
+- Alcance de fáciles/difíciles: `DIFFICULTY_SCOPE` en el test de la plantilla (`"total"` = sobre todo el archivo,
+  `"reading"` = al menos 2 en cada lectura).
+- Los cambios a `repo-template/` no llegan a los alumnos hasta correr `scripts/actualizar-repos-trimestre.ps1`.
+- Entregas tardías aceptadas: `correcciones/corte-preguntas-1/entregas-tardias.csv` (equipo, commit exacto, descuento).
+
 ### Descargar informe
 ```bash
 gh run download <run-id> --name results-all

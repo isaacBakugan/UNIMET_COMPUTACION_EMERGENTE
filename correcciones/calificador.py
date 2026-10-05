@@ -29,6 +29,7 @@ from sandbox import check_runtime, run_case
 ROOT = Path(__file__).resolve().parent.parent
 ASSIGNMENT_CONFIG = ROOT / "correcciones" / "tarea-1"
 STATE_FILE = ROOT / "trimestre-actual" / "estado.json"
+DELIVERY_LIST_FILE = ROOT / "trimestre-actual" / "lista-entrega.csv"   # term roster, shared by every assignment
 NO_CODE_EXPLANATION = "El archivo conserva la plantilla sin código; no procesa este ejemplo ni produce una gráfica."
 
 
@@ -353,7 +354,7 @@ def main() -> int:
     check_runtime()
 
     warnings: list[str] = []
-    delivery_list = load_delivery_list(ASSIGNMENT_CONFIG / "lista-entrega.csv")
+    delivery_list = load_delivery_list(DELIVERY_LIST_FILE)
     roster = {(r["team"], r["file"]): r for r in read_csv(ASSIGNMENT_CONFIG / "alumnos.csv")}
     late = {(r["team"], r["file"]): r for r in read_csv(ASSIGNMENT_CONFIG / "entregas-tardias.csv")}
     overrides = load_overrides(ASSIGNMENT_CONFIG / "decisiones-docente.json")

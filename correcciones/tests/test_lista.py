@@ -7,19 +7,18 @@ import pytest
 from lista import BY_TEAM, HEADER, ListEntry, assign_students, normalize, sort_key
 
 CORRECTIONS_DIR = Path(__file__).resolve().parent.parent
-ASSIGNMENT_DIRS = sorted(path.parent for path in CORRECTIONS_DIR.glob("tarea-*/tarea.json"))
+DELIVERY_LIST = CORRECTIONS_DIR.parent / "trimestre-actual" / "lista-entrega.csv"
 
 
-def read_list(assignment_dir):
-    with (assignment_dir / "lista-entrega.csv").open(newline="", encoding="utf-8-sig") as file:
+def read_list(path):
+    with path.open(newline="", encoding="utf-8-sig") as file:
         return [ListEntry(r["last_name"], r["first_name"], r["team"]) for r in csv.DictReader(file)]
 
 
-# --- Gates discovered from disk (every correcciones/tarea-*/ is subject) ---
+# --- Gate: the term roster must exist, be alphabetical and use the team names of estado.json ---
 
-@pytest.mark.parametrize("assignment_dir", ASSIGNMENT_DIRS, ids=lambda path: path.name)
-def test_gate_delivery_list_is_alphabetical_complete_and_uses_real_team_names(assignment_dir):
-    entries = read_list(assignment_dir)
+def test_gate_delivery_list_is_alphabetical_complete_and_uses_real_team_names():
+    entries = read_list(DELIVERY_LIST)
     assert entries, "Empty delivery list: the gate would pass without proving anything"
     assert [sort_key(e) for e in entries] == sorted(sort_key(e) for e in entries), \
         "lista-entrega.csv must be in alphabetical order (last name, then first name)"

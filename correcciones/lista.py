@@ -1,6 +1,6 @@
 """Official delivery list (alphabetical by last name): match files to students and order the output.
 
-The professor hands in grades in the order of `tarea-N/lista-entrega.csv`. A file is matched
+The professor hands in grades in the order of `trimestre-actual/lista-entrega.csv`. A file is matched
 to a list entry by the name in its header (accent/case-insensitive, same team). Files whose
 header has no name are assigned by team to the entries still unmatched, in file order, and
 flagged `by_team` so they can be fixed by hand later.

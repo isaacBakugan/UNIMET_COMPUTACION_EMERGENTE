@@ -35,10 +35,25 @@ def to_utc_iso(value: str) -> str:
     return date.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def commit_at_cutoff(repo: Path, cutoff: str) -> str | None:
-    """Last commit of the checked-out branch whose commit date is <= cutoff, or None."""
-    sha = git(repo, "rev-list", "-1", f"--before={to_utc_iso(cutoff)}", "HEAD")
+def commit_at_cutoff(repo: Path, cutoff: str, ref: str = "HEAD") -> str | None:
+    """Last commit reachable from `ref` whose commit date is <= cutoff, or None."""
+    sha = git(repo, "rev-list", "-1", f"--before={to_utc_iso(cutoff)}", ref)
     return sha or None
+
+
+def commits_after_cutoff(repo: Path, cutoff: str, ref: str = "HEAD", folder: str | None = None) -> list[str]:
+    """ISO dates of the commits after the cutoff (optionally only those touching `folder`), newest first."""
+    args = ["log", f"--after={to_utc_iso(cutoff)}", "--format=%cI", ref]
+    if folder:
+        args += ["--", folder]
+    return git(repo, *args).splitlines()
+
+
+def remote_ref(repo: Path) -> str:
+    """The remote default branch (origin/HEAD) when the clone has one; HEAD otherwise."""
+    result = subprocess.run(["git", "-C", str(repo), "rev-parse", "--verify", "--quiet", "origin/HEAD"],
+                            capture_output=True, text=True)
+    return "origin/HEAD" if result.returncode == 0 else "HEAD"
 
 
 def commit_exists(repo: Path, sha: str) -> bool:
@@ -50,18 +65,18 @@ def commit_date(repo: Path, sha: str) -> str:
     return git(repo, "show", "-s", "--format=%cI", sha)
 
 
-def export_assignment(repo: Path, sha: str, destination: Path) -> Path:
-    """Extract `tarea-1-codigo/` at `sha` into `destination`; return the extracted folder.
+def export_assignment(repo: Path, sha: str, destination: Path, folder: str = ASSIGNMENT_DIR) -> Path:
+    """Extract `folder` (default `tarea-1-codigo/`) at `sha` into `destination`; return the extracted folder.
 
-    Returns a possibly empty folder when the assignment folder does not exist at that commit.
+    Returns a possibly empty folder when the folder does not exist at that commit.
     """
     destination.mkdir(parents=True, exist_ok=True)
-    result = subprocess.run(["git", "-C", str(repo), "archive", "--format=tar", sha, ASSIGNMENT_DIR],
+    result = subprocess.run(["git", "-C", str(repo), "archive", "--format=tar", sha, folder],
                             capture_output=True, timeout=120)
     if result.returncode == 0:
         with tarfile.open(fileobj=io.BytesIO(result.stdout)) as archive:
             archive.extractall(destination, filter="data")
-    return destination / ASSIGNMENT_DIR
+    return destination / folder
 
 
 def student_identity(source: str) -> tuple[str, str]:

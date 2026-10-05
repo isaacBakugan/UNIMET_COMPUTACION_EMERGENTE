@@ -1,9 +1,13 @@
 import json
+import os
 from collections import Counter
 from pathlib import Path
 
+import pytest
+
 BASE_DIR = Path(__file__).resolve().parent.parent
-QUESTIONS_FILE = BASE_DIR / "preguntas.json"
+# The central grader points QUESTIONS_FILE at the team's file at the cutoff commit; students just run pytest.
+QUESTIONS_FILE = Path(os.environ.get("QUESTIONS_FILE") or BASE_DIR / "preguntas.json")
 
 VALID_TYPES = {"true_false", "multiple_choice"}
 VALID_READINGS = {
@@ -14,13 +18,47 @@ VALID_READINGS = {
 }
 REQUIRED_FIELDS = {"id", "reading", "type", "statement", "options", "correct_option", "difficulty_level"}
 
-EXPECTED_TOTAL = len(VALID_READINGS) * 10
+QUESTIONS_PER_READING = 10
+EXPECTED_TOTAL = len(VALID_READINGS) * QUESTIONS_PER_READING
+
+# At least MIN_PER_BAND easy questions (level < EASY_BELOW) and as many hard ones (level > HARD_ABOVE).
+# DIFFICULTY_SCOPE "total": counted over the whole file. "reading": counted separately in each reading.
+DIFFICULTY_SCOPE = "total"
+EASY_BELOW = 3
+HARD_ABOVE = 7
+MIN_PER_BAND = 2
+
+# Text the template ships with: a question that still has it was never written by the team.
+PLACEHOLDER_STATEMENT_MARKER = "PONGAN AQUÍ"
+PLACEHOLDER_OPTION_MARKER = "(edítenla)"
 
 
-def load_questions():
+def is_placeholder(question):
+    statement = str(question.get("statement", ""))
+    options = question.get("options", [])
+    return PLACEHOLDER_STATEMENT_MARKER in statement or any(
+        PLACEHOLDER_OPTION_MARKER in str(option) for option in options
+    )
+
+
+def load_all_questions():
     with open(QUESTIONS_FILE, encoding="utf-8") as f:
         data = json.load(f)
     return data.get("questions", [])
+
+
+def load_questions():
+    """Questions the team actually wrote: template placeholders do not count as questions.
+
+    Fails when there are none, so that no test passes "vacuously" over an empty or untouched file.
+    """
+    questions = [q for q in load_all_questions() if not is_placeholder(q)]
+    assert questions, "No questions written yet: preguntas.json is empty or still has only the template placeholders"
+    return questions
+
+
+def questions_of(reading):
+    return [q for q in load_questions() if q.get("reading") == reading]
 
 
 def test_file_exists_and_is_valid_json():
@@ -31,9 +69,16 @@ def test_file_exists_and_is_valid_json():
 def test_there_are_exactly_40_questions():
     questions = load_questions()
     assert len(questions) == EXPECTED_TOTAL, (
-        f"Expected {EXPECTED_TOTAL} questions (10 per reading x {len(VALID_READINGS)} readings), "
+        f"Expected {EXPECTED_TOTAL} questions ({QUESTIONS_PER_READING} per reading x {len(VALID_READINGS)} readings), "
         f"got {len(questions)}"
     )
+
+
+def test_no_template_placeholders_left():
+    all_questions = load_all_questions()
+    assert all_questions, "preguntas.json has no questions"   # an empty file must not pass "vacuously"
+    placeholders = [q.get("id", "?") for q in all_questions if is_placeholder(q)]
+    assert not placeholders, f"{len(placeholders)} questions still have the template text: {placeholders}"
 
 
 def test_required_fields_present():
@@ -49,21 +94,20 @@ def test_reading_is_valid():
         )
 
 
-def test_10_questions_per_reading_5_true_false_and_5_multiple_choice():
-    questions = load_questions()
-    for reading in VALID_READINGS:
-        from_this_reading = [q for q in questions if q.get("reading") == reading]
-        assert len(from_this_reading) == 10, (
-            f"Reading '{reading}': expected 10 questions, got {len(from_this_reading)}"
-        )
+@pytest.mark.parametrize("reading", sorted(VALID_READINGS))
+def test_reading_has_10_questions_5_true_false_and_5_multiple_choice(reading):
+    from_this_reading = questions_of(reading)
+    assert len(from_this_reading) == QUESTIONS_PER_READING, (
+        f"Reading '{reading}': expected {QUESTIONS_PER_READING} questions, got {len(from_this_reading)}"
+    )
 
-        counts = Counter(q.get("type") for q in from_this_reading)
-        assert counts["true_false"] == 5, (
-            f"Reading '{reading}': expected 5 true/false, got {counts['true_false']}"
-        )
-        assert counts["multiple_choice"] == 5, (
-            f"Reading '{reading}': expected 5 multiple choice, got {counts['multiple_choice']}"
-        )
+    counts = Counter(q.get("type") for q in from_this_reading)
+    assert counts["true_false"] == 5, (
+        f"Reading '{reading}': expected 5 true/false, got {counts['true_false']}"
+    )
+    assert counts["multiple_choice"] == 5, (
+        f"Reading '{reading}': expected 5 multiple choice, got {counts['multiple_choice']}"
+    )
 
 
 def test_types_are_valid():
@@ -113,3 +157,34 @@ def test_difficulty_level_is_an_integer_between_1_and_10():
             f"Question {q.get('id', '?')}: difficulty_level must be an integer"
         )
         assert 1 <= level <= 10, f"Question {q.get('id', '?')}: difficulty_level must be between 1 and 10"
+
+
+DIFFICULTY_SCOPES = sorted(VALID_READINGS) if DIFFICULTY_SCOPE == "reading" else ["all"]
+
+
+def difficulty_levels(scope):
+    questions = load_questions() if scope == "all" else questions_of(scope)
+    return [q["difficulty_level"] for q in questions
+            if isinstance(q.get("difficulty_level"), int) and not isinstance(q.get("difficulty_level"), bool)]
+
+
+def scope_label(scope):
+    return "the file" if scope == "all" else f"reading '{scope}'"
+
+
+@pytest.mark.parametrize("scope", DIFFICULTY_SCOPES)
+def test_has_at_least_2_easy_questions(scope):
+    easy = [level for level in difficulty_levels(scope) if level < EASY_BELOW]
+    assert len(easy) >= MIN_PER_BAND, (
+        f"In {scope_label(scope)}: need at least {MIN_PER_BAND} easy questions "
+        f"(difficulty_level < {EASY_BELOW}), got {len(easy)}"
+    )
+
+
+@pytest.mark.parametrize("scope", DIFFICULTY_SCOPES)
+def test_has_at_least_2_hard_questions(scope):
+    hard = [level for level in difficulty_levels(scope) if level > HARD_ABOVE]
+    assert len(hard) >= MIN_PER_BAND, (
+        f"In {scope_label(scope)}: need at least {MIN_PER_BAND} hard questions "
+        f"(difficulty_level > {HARD_ABOVE}), got {len(hard)}"
+    )
