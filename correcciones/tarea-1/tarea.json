@@ -3,6 +3,7 @@
   "cutoff": "2026-09-28T00:00:00-04:00",
   "minimum_grade": 1,
   "maximum_grade": 20,
+  "late_penalty_points": 2,
   "excluded_teams": ["grupo-control"],
   "criteria": [
     {"key": "given_separable", "description": "Separa el ejemplo dado", "correct": 25, "incorrect": 15, "no_result": 0},

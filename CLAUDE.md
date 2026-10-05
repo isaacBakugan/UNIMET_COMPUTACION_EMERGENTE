@@ -74,9 +74,13 @@ estudiante en orden alfabético, `informe.md`).
 - **La plantilla sin tocar debe sacar la nota mínima.** Los placeholders (`PONGAN AQUÍ`, `(edítenla)`) no cuentan como
   preguntas, y `load_questions()` falla si no hay ninguna, para que nada pase "por vacuidad". Gate:
   `test_gate_the_untouched_template_scores_the_minimum_grade`.
-- Cierre en `corte.json` (`cutoff`, zona -04:00). Se evalúa el último commit **anterior** al cierre; los commits
-  posteriores que tocan `corte-preguntas-1/` se reportan como entrega tardía y no se evalúan (salvo que se acepten
-  en `entregas-tardias.csv`, con commit exacto y descuento).
+- Cierre en `corte.json` (`cutoff`, zona -04:00). **Regla de la rúbrica: la entrega tardía se evalúa igual y se penaliza
+  con 2 puntos menos (`late_penalty_points`), y la penalización es INDIVIDUAL, no por equipo.** Todos reciben la nota del
+  último commit anterior al cierre; quien hizo commits posteriores (por email de autor, `corte-preguntas-1/autores.csv`)
+  recibe `max(versión al cierre, versión final - 2)`: un commit tardío nunca perjudica. Autor tardío sin mapear = ADVERTENCIA.
+  Gate: `test_gate_every_author_maps_to_a_student_of_the_delivery_list`.
+- En la Tarea 1 cada archivo ya es de un estudiante: misma regla (evalúa el último commit con -2 y toma la mejor versión);
+  `entregas-tardias.csv` solo para excepciones.
 - Alcance de la regla de fáciles (< 3) / difíciles (> 7): constante `DIFFICULTY_SCOPE` del test (`"total"` o `"reading"`).
 - La lista de entrega alfabética (`trimestre-actual/lista-entrega.csv`) es del trimestre y la comparten todas las
   correcciones; en el corte cada integrante recibe la nota de su equipo.

@@ -39,6 +39,7 @@ class CorteConfig:
     test_file: Path
     minimum_grade: int
     maximum_grade: int
+    late_penalty_points: int
     excluded_teams: tuple[str, ...]
     criteria: tuple[Criterion, ...]
 
@@ -92,8 +93,11 @@ def load_config(path: Path) -> CorteConfig:
         raise ValueError("Every criterion needs tests, and a test can belong to only one criterion")
     if not 0 <= raw["minimum_grade"] < raw["maximum_grade"]:
         raise ValueError("minimum_grade must be >= 0 and lower than maximum_grade")
+    if not 0 <= raw["late_penalty_points"] < raw["maximum_grade"]:
+        raise ValueError("late_penalty_points must be >= 0 and lower than maximum_grade")
     return CorteConfig(raw["name"], raw["cutoff"], raw["folder"], raw["deliverable"], ROOT / raw["test_file"],
-                       raw["minimum_grade"], raw["maximum_grade"], tuple(raw.get("excluded_teams", [])), criteria)
+                       raw["minimum_grade"], raw["maximum_grade"], raw["late_penalty_points"],
+                       tuple(raw.get("excluded_teams", [])), criteria)
 
 
 def discover_test_names(test_file: Path) -> set[str]:

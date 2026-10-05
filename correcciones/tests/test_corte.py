@@ -135,3 +135,91 @@ def test_config_rejects_points_that_do_not_add_up(tmp_path):
     broken.write_text(json.dumps(raw), encoding="utf-8")
     with pytest.raises(ValueError):
         load_config(broken)
+
+
+# --- Late policy: lateness is INDIVIDUAL (by commit author), the deliverable is the team's ---
+
+def commit_file(repo, content, date, message, email):
+    import os
+    import subprocess
+    folder = repo / "corte-preguntas-1"
+    folder.mkdir(exist_ok=True)
+    (folder / "preguntas.json").write_text(content, encoding="utf-8")
+    env = {**os.environ, "GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date, "GIT_AUTHOR_NAME": "t",
+           "GIT_AUTHOR_EMAIL": email, "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": email}
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True, capture_output=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "commit", "-m", message], check=True, capture_output=True, env=env)
+
+
+def evaluate_in_temp_repo(tmp_path, on_time_content, late_content, late_email="Late@Example.com"):
+    import subprocess
+    from dataclasses import replace
+    from calificador_corte import evaluate_team
+    repo = tmp_path / "clones" / "team-repo"
+    repo.mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    commit_file(repo, on_time_content, "2026-09-27T12:00:00-04:00", "on time", "ontime@example.com")
+    if late_content is not None:
+        commit_file(repo, late_content, "2026-09-29T12:00:00-04:00", "late", late_email)
+    config = replace(load_config(CONFIG_FILES[0]), cutoff="2026-09-28T00:00:00-04:00")
+    item = {"team": "T", "repo": "team-repo", "url": "https://example.invalid/team-repo"}
+    return config, evaluate_team(item, config, tmp_path / "clones", tmp_path / "work", update=False)
+
+
+def questions_json(questions):
+    return json.dumps({"team": "t", "questions": questions})
+
+
+def test_the_student_who_pushed_late_gets_the_penalized_version_and_teammates_keep_the_cutoff_grade(tmp_path):
+    from calificador_corte import student_grade
+    template = TEMPLATE_QUESTIONS.read_text(encoding="utf-8")
+    config, row = evaluate_in_temp_repo(tmp_path, template, questions_json(full_submission()))
+    assert row.late_emails == {"late@example.com"}          # authors are compared in lowercase
+    assert student_grade(row, config, is_late=True) == (18, True)    # 20 - 2
+    assert student_grade(row, config, is_late=False) == (config.minimum_grade, False)
+
+
+def test_a_late_commit_never_hurts_the_author(tmp_path):
+    from calificador_corte import student_grade
+    full = questions_json(full_submission())
+    late_tweak = full.replace('"team": "t"', '"team": "t2"')   # same questions, different file
+    config, row = evaluate_in_temp_repo(tmp_path, full, late_tweak)
+    assert student_grade(row, config, is_late=True) == (20, False)   # on-time 20 beats late 20 - 2
+
+
+def test_no_late_commits_means_no_latest_version_and_no_penalty(tmp_path):
+    from calificador_corte import student_grade
+    config, row = evaluate_in_temp_repo(tmp_path, questions_json(full_submission()), None)
+    assert row.latest_result is None and row.late_commits == []
+    assert student_grade(row, config, is_late=True) == (20, False)
+
+
+def test_student_rows_penalize_only_the_mapped_late_author_and_warn_about_unmapped_ones(tmp_path):
+    from calificador_corte import student_rows
+    from lista import ListEntry
+    template = TEMPLATE_QUESTIONS.read_text(encoding="utf-8")
+    entries = [ListEntry("Alfa", "Ana", "T"), ListEntry("Beta", "Beto", "T")]
+    config, row = evaluate_in_temp_repo(tmp_path, template, questions_json(full_submission()), late_email="ana@example.com")
+    warnings = []
+    rows = student_rows(entries, [row], config, {"ana@example.com": ("Alfa", "Ana")}, warnings)
+    assert [(r["Apellido"], r["Nota"]) for r in rows] == [("Alfa", 18), ("Beta", config.minimum_grade)]
+    assert "Entrega tardía" in rows[0]["Observación"] and rows[1]["Observación"] == ""
+    assert warnings == []
+
+    warnings = []
+    rows = student_rows(entries, [row], config, {}, warnings)    # nobody is mapped to the late author
+    assert [r["Nota"] for r in rows] == [config.minimum_grade, config.minimum_grade]
+    assert any("ana@example.com" in w and "autores.csv" in w for w in warnings)
+
+
+@pytest.mark.parametrize("config_file", CONFIG_FILES, ids=lambda path: path.parent.name)
+def test_gate_every_author_maps_to_a_student_of_the_delivery_list(config_file):
+    import csv
+    from calificador_corte import load_authors
+    from lista import normalize
+    authors = load_authors(config_file.parent / "autores.csv")
+    assert authors, "Empty autores.csv: the gate would pass without proving anything"
+    with (ROOT / "trimestre-actual" / "lista-entrega.csv").open(newline="", encoding="utf-8-sig") as file:
+        listed = {(normalize(r["last_name"]), normalize(r["first_name"])) for r in csv.DictReader(file)}
+    unknown = {email: name for email, name in authors.items() if (normalize(name[0]), normalize(name[1])) not in listed}
+    assert not unknown, f"Authors that do not match anyone in lista-entrega.csv: {unknown}"

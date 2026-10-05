@@ -243,7 +243,10 @@ La columna **Revisar** marca los casos donde el criterio es visual y conviene ab
 
 - Requisito único en Ubuntu/WSL: `sudo apt install bubblewrap python3-matplotlib`.
 - Los casos "no vistos" viven en `correcciones/tarea-1/casos/` (nunca en `repo-template/`).
-- Entregas tardías aceptadas: `correcciones/tarea-1/entregas-tardias.csv` (commit exacto + descuento).
+- **Entrega tardía (individual, -2 puntos):** cada archivo es de un estudiante. Si hay commits posteriores al cierre, se
+  evalúa también el último commit con 2 puntos menos y el estudiante recibe la mejor entre esa nota y la de la versión al
+  cierre (un commit tardío nunca perjudica a quien entregó a tiempo). El descuento está en `late_penalty_points` de
+  `tarea.json`. `entregas-tardias.csv` queda solo para excepciones (commit exacto + descuento distinto).
 - Decisiones de la preparadora que el corrector automático no puede tomar (ruta absoluta de
   Windows, menú sin CSV propio): `correcciones/tarea-1/decisiones-docente.json`, atadas a un commit
   exacto; si el estudiante pushea otro commit, la decisión caduca y el corrector avisa.
@@ -257,8 +260,7 @@ python correcciones/calificador_corte.py --team G1  # un solo equipo
 ```
 Evalúa el `preguntas.json` del último commit anterior al cierre (`correcciones/corte-preguntas-1/corte.json`)
 con **las mismas pruebas unitarias que corren los alumnos** (`repo-template/corte-preguntas-1/tests/`),
-las ejecuta desde este repo (nunca la copia del alumno), marca los commits posteriores al cierre como
-**entrega tardía** y escribe en `correcciones/resultados/<trimestre>/corte-preguntas-1/`:
+las ejecuta desde este repo (nunca la copia del alumno), aplica la entrega tardía **individual** (ver abajo) y escribe en `correcciones/resultados/<trimestre>/corte-preguntas-1/`:
 `notas.csv` (por equipo), `notas-sheets.csv` (por estudiante, alfabético, para Google Sheets) e `informe.md`
 (qué pruebas fallaron y por qué). Si lo corres antes del cierre, el reporte sale marcado **PRELIMINAR**.
 
@@ -267,7 +269,11 @@ las ejecuta desde este repo (nunca la copia del alumno), marca los commits poste
 - Alcance de fáciles/difíciles: `DIFFICULTY_SCOPE` en el test de la plantilla (`"total"` = sobre todo el archivo,
   `"reading"` = al menos 2 en cada lectura).
 - Los cambios a `repo-template/` no llegan a los alumnos hasta correr `scripts/actualizar-repos-trimestre.ps1`.
-- Entregas tardías aceptadas: `correcciones/corte-preguntas-1/entregas-tardias.csv` (equipo, commit exacto, descuento).
+- **Entrega tardía individual (-2 puntos):** el entregable es del equipo, pero la tardanza es de cada persona. Todos los
+  integrantes reciben la nota de la versión del equipo al cierre; quien hizo commits posteriores al cierre (se identifica por
+  el email del autor del commit, mapeado en `correcciones/corte-preguntas-1/autores.csv`) recibe la mejor entre esa nota y la
+  de la versión final con 2 puntos menos. Un autor tardío que no esté en `autores.csv` sale como ADVERTENCIA y no penaliza a
+  nadie hasta que se asigne.
 
 ### Descargar informe
 ```bash

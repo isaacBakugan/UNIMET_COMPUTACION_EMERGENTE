@@ -49,6 +49,14 @@ def commits_after_cutoff(repo: Path, cutoff: str, ref: str = "HEAD", folder: str
     return git(repo, *args).splitlines()
 
 
+def commits_after_cutoff_by_author(repo: Path, cutoff: str, ref: str = "HEAD", folder: str | None = None) -> list[tuple[str, str]]:
+    """(ISO date, lowercase author email) of the commits after the cutoff touching `folder`, newest first."""
+    args = ["log", f"--after={to_utc_iso(cutoff)}", "--format=%cI|%ae", ref]
+    if folder:
+        args += ["--", folder]
+    return [(date, email.lower()) for date, email in (line.split("|", 1) for line in git(repo, *args).splitlines())]
+
+
 def remote_ref(repo: Path) -> str:
     """The remote default branch (origin/HEAD) when the clone has one; HEAD otherwise."""
     result = subprocess.run(["git", "-C", str(repo), "rev-parse", "--verify", "--quiet", "origin/HEAD"],

@@ -3,6 +3,7 @@
   "cutoff": "2026-10-04T23:59:59-04:00",
   "minimum_grade": 1,
   "maximum_grade": 20,
+  "late_penalty_points": 2,
   "folder": "corte-preguntas-1",
   "deliverable": "preguntas.json",
   "test_file": "repo-template/corte-preguntas-1/tests/test_validar_entregable_1.py",

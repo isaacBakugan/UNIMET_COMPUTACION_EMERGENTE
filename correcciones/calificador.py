@@ -22,7 +22,7 @@ from pathlib import Path
 
 from lista import BY_TEAM, UNASSIGNED, ListEntry, assign_students, sort_key
 from entregas import (ASSIGNMENT_DIR, PERCEPTRON_FILES, commit_at_cutoff, commit_date, commit_exists,
-                      export_assignment, static_review, student_identity, to_utc_iso)
+                      commits_after_cutoff, export_assignment, git, static_review, student_identity, to_utc_iso)
 from rubrica import (CASE_KEYS, CaseResult, Rubric, final_grade, load_rubric, rubric_grade, score_case)
 from sandbox import check_runtime, run_case
 
@@ -47,6 +47,8 @@ class Submission:
     last_name: str = ""
     first_name: str = ""
     assignment: str = UNASSIGNED    # header | by_team | unassigned (see lista.py)
+    version: str = "cutoff"         # cutoff | late | accepted
+    late_commits: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     source_dir: Path | None = None
     cases: dict[str, CaseResult] = field(default_factory=dict)
@@ -86,9 +88,46 @@ def load_active_repos(state_file: Path, excluded: tuple[str, ...]) -> tuple[str,
     return terms.pop(), [(item["team"], item["repo"]) for item in active]
 
 
+def build_submission(team: str, repo: Path, file: str, sha: str | None, penalty: int, version: str, work_dir: Path,
+                     roster: dict[tuple[str, str], dict], warnings: list[str]) -> Submission:
+    """Export `file` at `sha` and run the static review; `sha=None` means there was no commit to evaluate."""
+    submission = Submission(team, repo.name, file, penalty=penalty, version=version)
+    if sha is None:
+        submission.status = "no_submission"
+        submission.notes.append("Sin commits hasta el cierre.")
+        return submission
+    submission.commit, submission.commit_date = sha, commit_date(repo, sha)
+    source_dir = work_dir / "sources" / repo.name / sha[:10]
+    if not source_dir.exists():
+        export_assignment(repo, sha, source_dir)
+    submission.source_dir = source_dir / ASSIGNMENT_DIR
+    path = submission.source_dir / file
+    if not path.exists():
+        submission.status = "no_submission"
+        submission.notes.append("Archivo ausente en ese commit.")
+    else:
+        source = path.read_text(encoding="utf-8-sig", errors="replace")
+        review = static_review(source)
+        submission.student_name, submission.national_id = student_identity(source)
+        if review["empty"]:
+            submission.status = "no_submission"
+            submission.notes.append("Archivo plantilla sin código ejecutable.")
+        elif not review["syntax_ok"]:
+            submission.status = "does_not_compile"
+            submission.notes.append(f"No compila ({review['syntax_error']}).")
+        if review["forbidden_imports"]:
+            submission.notes.append("Importa librerías fuera de matplotlib: " + ", ".join(review["forbidden_imports"]) + ".")
+    fill_identity_from_roster(submission, roster.get((team, file)), warnings)
+    return submission
+
+
 def collect_submissions(teams: list[tuple[str, str]], clones: Path, rubric: Rubric, work_dir: Path,
                         roster: dict[tuple[str, str], dict], late: dict[tuple[str, str], dict],
                         warnings: list[str]) -> list[Submission]:
+    """One submission per file, or two (cutoff version + latest version) when commits came after the cutoff.
+
+    A manual entry in entregas-tardias.csv pins one exact commit and penalty and skips the automatic rule.
+    """
     submissions = []
     for team, repo_name in teams:
         repo = clones / repo_name
@@ -99,46 +138,58 @@ def collect_submissions(teams: list[tuple[str, str]], clones: Path, rubric: Rubr
                 submissions.append(submission)
             continue
         cutoff_sha = commit_at_cutoff(repo, rubric.cutoff)
+        latest_sha = git(repo, "rev-parse", "HEAD")
         for file in PERCEPTRON_FILES:
-            submission = Submission(team, repo_name, file)
-            sha = cutoff_sha
             accepted = late.get((team, file))
-            if accepted:
-                if not commit_exists(repo, accepted["commit"]):
-                    warnings.append(f"Entrega tardía de {team}/{file}: el commit {accepted['commit'][:10]} no existe en el clon.")
-                else:
-                    sha = accepted["commit"]
-                    submission.penalty = int(accepted["penalty_points"])
-                    submission.notes.append(f"Entrega posterior al cierre aceptada: descuento de {submission.penalty} puntos. {accepted['reason']}")
-            if sha is None:
-                submission.status = "no_submission"
-                submission.notes.append("Sin commits hasta el cierre.")
+            if accepted and commit_exists(repo, accepted["commit"]):
+                penalty = int(accepted["penalty_points"])
+                submission = build_submission(team, repo, file, accepted["commit"], penalty, "accepted", work_dir, roster, warnings)
+                submission.notes.append(f"Entrega posterior al cierre aceptada: descuento de {penalty} puntos. {accepted['reason']}")
                 submissions.append(submission)
                 continue
-            submission.commit, submission.commit_date = sha, commit_date(repo, sha)
-            source_dir = work_dir / "sources" / repo_name / sha[:10]
-            if not source_dir.exists():
-                export_assignment(repo, sha, source_dir)
-            submission.source_dir = source_dir / ASSIGNMENT_DIR
-            path = submission.source_dir / file
-            if not path.exists():
-                submission.status = "no_submission"
-                submission.notes.append("Archivo ausente en ese commit.")
-            else:
-                source = path.read_text(encoding="utf-8-sig", errors="replace")
-                review = static_review(source)
-                submission.student_name, submission.national_id = student_identity(source)
-                if review["empty"]:
-                    submission.status = "no_submission"
-                    submission.notes.append("Archivo plantilla sin código ejecutable.")
-                elif not review["syntax_ok"]:
-                    submission.status = "does_not_compile"
-                    submission.notes.append(f"No compila ({review['syntax_error']}).")
-                if review["forbidden_imports"]:
-                    submission.notes.append("Importa librerías fuera de matplotlib: " + ", ".join(review["forbidden_imports"]) + ".")
-            fill_identity_from_roster(submission, roster.get((team, file)), warnings)
-            submissions.append(submission)
+            if accepted:
+                warnings.append(f"Entrega tardía de {team}/{file}: el commit {accepted['commit'][:10]} no existe en el clon.")
+            submissions.append(build_submission(team, repo, file, cutoff_sha, 0, "cutoff", work_dir, roster, warnings))
+            late_dates = commits_after_cutoff(repo, rubric.cutoff, folder=f"{ASSIGNMENT_DIR}/{file}")
+            if late_dates:
+                late_version = build_submission(team, repo, file, latest_sha, rubric.late_penalty_points, "late", work_dir, roster, warnings)
+                late_version.late_commits = late_dates
+                submissions.append(late_version)
     return submissions
+
+
+def grade_of(submission: Submission, rubric: Rubric) -> int:
+    _, rubric_value = rubric_grade(rubric, {case: submission.cases[case].outcome for case in CASE_KEYS})
+    return final_grade(rubric, rubric_value, submission.penalty)
+
+
+def pick_best_versions(submissions: list[Submission], rubric: Rubric, warnings: list[str]) -> list[Submission]:
+    """Late policy: commits after the cutoff are still graded, minus `late_penalty_points`.
+
+    When a file has both a cutoff version and a later one, the student keeps the better grade of
+    (cutoff version, no penalty) and (latest version, penalized): a late commit never hurts an on-time delivery.
+    """
+    groups: dict[tuple[str, str], list[Submission]] = {}
+    for submission in submissions:
+        groups.setdefault((submission.team, submission.file), []).append(submission)
+    chosen = []
+    for (team, file), versions in groups.items():
+        if len(versions) == 1:
+            chosen.append(versions[0])
+            continue
+        on_time, late = versions
+        on_time_grade, late_grade = grade_of(on_time, rubric), grade_of(late, rubric)
+        info = f"{len(late.late_commits)} commits posteriores al cierre (último: {late.late_commits[0]})"
+        if late_grade > on_time_grade:
+            late.notes.append(f"Entrega tardía: {info}; se evalúa el último commit con descuento de {late.penalty} puntos "
+                              f"(la versión al cierre obtenía {on_time_grade}).")
+            warnings.append(f"{team}/{file}: entrega tardía evaluada con descuento de {late.penalty} puntos ({on_time_grade} -> {late_grade}).")
+            chosen.append(late)
+        else:
+            on_time.notes.append(f"Hay {info}, pero la versión al cierre ({on_time_grade}) iguala o supera la tardía con "
+                                 f"descuento ({late_grade}); se mantiene la del cierre.")
+            chosen.append(on_time)
+    return chosen
 
 
 def fill_identity_from_roster(submission: Submission, entry: dict | None, warnings: list[str]) -> None:
@@ -365,6 +416,7 @@ def main() -> int:
     apply_overrides(submissions, [o for o in overrides if o["team"] in graded_teams], warnings)
     run_all(submissions, out_dir / "evidence", args.workers, args.timeout)
     finalize_unrunnable(submissions)
+    submissions = pick_best_versions(submissions, rubric, warnings)
     submissions = order_by_delivery_list(submissions, delivery_list, warnings)
     rows = build_rows(submissions, rubric)
     write_outputs(rows, submissions, rubric, out_dir, term, warnings)

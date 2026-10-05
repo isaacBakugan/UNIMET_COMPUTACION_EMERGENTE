@@ -24,6 +24,7 @@ class Rubric:
     cutoff: str
     minimum_grade: int
     maximum_grade: int
+    late_penalty_points: int
     excluded_teams: tuple[str, ...]
     criteria: dict[str, dict]
 
@@ -51,9 +52,12 @@ def load_rubric(path: Path) -> Rubric:
             raise ValueError(f"Missing description in criterion {item['key']}")
     if not 0 <= config["minimum_grade"] < config["maximum_grade"]:
         raise ValueError("minimum_grade must be >= 0 and lower than maximum_grade")
+    if not 0 <= config["late_penalty_points"] < config["maximum_grade"]:
+        raise ValueError("late_penalty_points must be >= 0 and lower than maximum_grade")
     return Rubric(
         name=config["name"], cutoff=config["cutoff"],
         minimum_grade=config["minimum_grade"], maximum_grade=config["maximum_grade"],
+        late_penalty_points=config["late_penalty_points"],
         excluded_teams=tuple(config.get("excluded_teams", [])),
         criteria={item["key"]: item for item in items})
 

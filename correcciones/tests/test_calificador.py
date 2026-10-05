@@ -146,3 +146,38 @@ def test_commit_at_cutoff_respects_the_timezone(tmp_path):
     assert commit_at_cutoff(tmp_path, "2026-09-26T00:00:00-04:00") is None
     with pytest.raises(ValueError):
         commit_at_cutoff(tmp_path, "2026-09-28T00:00:00")
+
+
+# --- Late policy for Tarea 1: the better of (cutoff version, latest version minus the penalty) ---
+
+def make_version(version, outcome, penalty):
+    from calificador import Submission
+    from rubrica import CaseResult
+    submission = Submission("T", "T-repo", "perceptron_1.py", penalty=penalty, version=version)
+    submission.cases = {case: CaseResult(outcome, "x") for case in CASE_KEYS}
+    if version == "late":
+        submission.late_commits = ["2026-10-04T21:20:58-04:00"]
+    return submission
+
+
+def test_late_delivery_is_graded_with_the_penalty_when_nothing_arrived_on_time():
+    from calificador import pick_best_versions
+    rubric = load_rubric(CORRECTIONS_DIR / "tarea-1" / "tarea.json")
+    on_time, late = make_version("cutoff", "no_result", 0), make_version("late", "correct", rubric.late_penalty_points)
+    warnings = []
+    assert pick_best_versions([on_time, late], rubric, warnings) == [late]
+    assert warnings and "descuento de 2" in warnings[0]
+
+
+def test_a_late_commit_does_not_replace_an_equal_or_better_on_time_version():
+    from calificador import pick_best_versions
+    rubric = load_rubric(CORRECTIONS_DIR / "tarea-1" / "tarea.json")
+    on_time, late = make_version("cutoff", "correct", 0), make_version("late", "correct", rubric.late_penalty_points)
+    assert pick_best_versions([on_time, late], rubric, []) == [on_time]
+
+
+def test_a_crashing_late_version_does_not_beat_the_minimum_grade_of_the_cutoff_version():
+    from calificador import pick_best_versions
+    rubric = load_rubric(CORRECTIONS_DIR / "tarea-1" / "tarea.json")
+    on_time, late = make_version("cutoff", "no_result", 0), make_version("late", "no_result", rubric.late_penalty_points)
+    assert pick_best_versions([on_time, late], rubric, []) == [on_time]
