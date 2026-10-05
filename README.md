@@ -195,6 +195,10 @@ Cada trimestre reutiliza este repo, agrega:
 │   │   ├── preguntas.json          # "pongan sus preguntas aquí" — esto sí se corrige
 │   │   └── tests/
 │   │       └── test_validar_entregable_2.py
+│   ├── corte-preguntas-3/          # Entregable 3 (martes y jueves de las semanas 7 y 8; 40 preguntas)
+│   │   └── ...                     # misma estructura y mismas reglas que el corte 2
+│   ├── corte-preguntas-4/          # Entregable 4 (martes y jueves sem. 9, martes sem. 10 y 11; 40 preguntas)
+│   │   └── ...
 │   └── tarea-1-codigo/              # Tarea 1: Perceptrón
 │       ├── README.md
 │       ├── assets/                 # datasets reales (no_separables.csv, fuzzy_separables.csv)
@@ -298,26 +302,37 @@ las ejecuta desde este repo (nunca la copia del alumno), aplica la entrega tard�
   de la versión final con 2 puntos menos. Un autor tardío que no esté en `autores.csv` sale como ADVERTENCIA y no penaliza a
   nadie hasta que se asigne.
 
-### Corregir el corte de preguntas 2
+### Corregir los cortes de preguntas 2, 3 y 4
 ```powershell
 python correcciones/calificador_corte.py --corte corte-preguntas-2            # todos los equipos y estudiantes
 python correcciones/calificador_corte.py --corte corte-preguntas-2 --update   # trae antes los cambios de GitHub
+python correcciones/calificador_corte.py --corte corte-preguntas-3            # idem para los cortes 3 y 4
 ```
 Mismo corrector, misma salida y misma regla de entrega tardía individual que el corte 1; cambia la configuración
-(`correcciones/corte-preguntas-2/corte.json`, con su propio `autores.csv`) y las pruebas
-(`repo-template/corte-preguntas-2/tests/`). Es un corte de **50 preguntas** (5 lecturas: martes y jueves de las semanas 3 y 4,
-más el martes de la semana 5), y los criterios son más finos, **todos deterministas** (sin LLM):
+(`correcciones/corte-preguntas-N/corte.json`, con su propio `autores.csv`) y las pruebas
+(`repo-template/corte-preguntas-N/tests/`). Los cortes 2, 3 y 4 comparten los mismos criterios, más finos y
+**todos deterministas** (sin LLM); solo cambian las lecturas:
+
+| Corte | Lecturas | Preguntas |
+|-------|----------|----------:|
+| 2 | martes y jueves de las semanas 3 y 4, más el martes de la semana 5 | 50 |
+| 3 | martes y jueves de las semanas 7 y 8 | 40 |
+| 4 | martes y jueves de la semana 9, martes de la semana 10 y martes de la semana 11 | 40 |
+
+Criterios (ejemplo con el total del corte 2; el 3 y el 4 piden 40):
 
 | Criterio   | Pts | Pruebas |
 |------------|----:|---------|
-| count      | 11  | 50 preguntas en total y 5 V/F + 5 selección por cada lectura |
+| count      | 11  | todas las preguntas del corte y 5 V/F + 5 selección por cada lectura |
 | format     |  3  | JSON/campos, sin placeholders, enunciado ≥ 5 palabras, sin duplicados ni casi-duplicados (similitud ≥ 85 %), 4 opciones exactas sin repetidas, sin "todas/ninguna de las anteriores", dificultad 1-10, `source_quote` ≥ 20 caracteres |
 | difficulty |  3  | ≥ 10 preguntas en cada banda: 1-3, 4-6 y 7-10 |
 | balance    |  3  | V/F entre 40 % y 60 % `Verdadero`; ninguna posición A-D concentra > 50 % de las correctas |
 
 - `count` es la mayoría de la nota (11/20). La nota mínima sigue siendo 1.
-- `cutoff` de `corte.json` es un **centinela (2099-12-31)**: mientras no se fije la fecha real, el reporte sale PRELIMINAR.
-  También se puede pasar con `--cutoff`.
+- `cutoff` de `corte.json` es un **centinela (2099-12-31)** en los cortes 2, 3 y 4: mientras no se fije la fecha real,
+  el reporte sale PRELIMINAR. También se puede pasar con `--cutoff`.
+- Que los tres cortes sigan con **las mismas reglas** lo hace cumplir un gate (`correcciones/tests/test_cortes_deterministas.py`):
+  el test de cada corte solo puede diferir en sus lecturas y su total, y una lectura no puede estar en dos cortes.
 - `source_quote` solo se valida por longitud; la verificación contra el texto de la lectura (y la calidad con LLM) es la siguiente fase.
 
 ### Descargar informe

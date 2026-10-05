@@ -85,17 +85,21 @@ estudiante en orden alfabético, `informe.md`).
 - La lista de entrega alfabética (`trimestre-actual/lista-entrega.csv`) es del trimestre y la comparten todas las
   correcciones; en el corte cada integrante recibe la nota de su equipo.
 
-## Corte de preguntas 2: 50 preguntas, criterios deterministas
+## Cortes de preguntas 2, 3 y 4: criterios deterministas
 
-`python correcciones/calificador_corte.py --corte corte-preguntas-2` (task `grade-corte-2`). Mismo corrector y misma
-regla de entrega tardía individual; config en `correcciones/corte-preguntas-2/` (`corte.json`, `autores.csv` propio).
+`python correcciones/calificador_corte.py --corte corte-preguntas-N` (tasks `grade-corte-2`, `-3`, `-4`). Mismo corrector y
+misma regla de entrega tardía individual; config en `correcciones/corte-preguntas-N/` (`corte.json`, `autores.csv` propio).
 
-- **50 preguntas, 5 lecturas** (martes y jueves semanas 3 y 4 + martes semana 5): 5 V/F + 5 selección por lectura.
+- **Lecturas** (5 V/F + 5 selección por lectura): corte 2 = martes y jueves sem. 3 y 4 + martes sem. 5 (**50 preguntas**);
+  corte 3 = martes y jueves sem. 7 y 8 (40); corte 4 = martes y jueves sem. 9 + martes sem. 10 y 11 (40).
+- Los tres cortes tienen **las mismas reglas**; un gate lo exige (el test de cada corte solo puede diferir en `VALID_READINGS`
+  y el total, y una lectura no puede repetirse entre cortes). Un corte nuevo con los mismos criterios queda sujeto por estar en disco.
 - Criterios (sobre 20): `count` 11 (la mayoría), `format` 3, `difficulty` 3 (≥10 preguntas en cada banda 1-3 / 4-6 / 7-10),
   `balance` 3 (V/F 40-60 % `Verdadero`; ninguna posición A-D > 50 % de las correctas). Todos deterministas, sin LLM.
 - Selección simple: **exactamente 4 opciones**, sin repetidas ni "todas/ninguna de las anteriores". Cada pregunta lleva
   `source_quote` (cita literal de la lectura, ≥ 20 caracteres); la verificación contra el texto de la lectura y la
   evaluación de calidad con LLM son la fase siguiente.
-- Los escenarios de puntaje están en `correcciones/tests/test_corte_preguntas_2.py`; los gates genéricos de
-  `test_corte.py` ya cubren cualquier `corte-*/corte.json` (cada test asignado a un criterio, plantilla sin tocar = nota mínima).
-- `cutoff` de `corte.json` está en 2099-12-31 hasta que se fije la fecha real (el reporte sale PRELIMINAR).
+- Los escenarios de puntaje y esos gates están en `correcciones/tests/test_cortes_deterministas.py` (corren contra cada corte
+  con criterios deterministas); los gates genéricos de `test_corte.py` cubren cualquier `corte-*/corte.json` (cada test asignado
+  a un criterio, plantilla sin tocar = nota mínima).
+- `cutoff` de cada `corte.json` está en 2099-12-31 hasta que se fije la fecha real (el reporte sale PRELIMINAR).
