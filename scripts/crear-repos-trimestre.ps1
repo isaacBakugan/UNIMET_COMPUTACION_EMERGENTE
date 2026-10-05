@@ -152,7 +152,7 @@ foreach ($teamDef in $teams) {
         Push-Location $localPath
         try {
             git add -A
-            git commit -m "[INFRA] Se agrega el template inicial del trimestre $Term"
+            git commit -m "infra: Se agrega el template inicial del trimestre $Term"
             git push
         }
         finally {

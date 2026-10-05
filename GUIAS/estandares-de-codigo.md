@@ -21,7 +21,7 @@ PowerShell):
 - El **contenido** que leen o escriben personas hispanohablantes: el texto de las
   preguntas (`statement`), nombres de equipo (`"grupo-lecturas-1"`), instrucciones para
   estudiantes
-- Mensajes de commit de git (formato `[PREFIJO] Se hace tal cosa`, ver convención del
+- Mensajes de commit de git (formato `prefijo: Se hace tal cosa`, sin corchetes: `feat:`, `fix:`, `infra:`, `docs:`, `ref:`; ver convención del
   autor) y nombres de rama
 - Nombres de carpetas y archivos ya establecidos (`formatos/`, `correcciones/`, `guias/`,
   `corte-preguntas-1/`, `crear-repos-trimestre.ps1`, `equipos.json`, ...) — son la

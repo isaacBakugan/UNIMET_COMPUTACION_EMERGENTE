@@ -12,7 +12,7 @@ Regla obligatoria en todo el repo. Detalle completo y ejemplos en
   JSON, valores tipo enum (`true_false`, `active`, `tuesday-week-1`), mensajes de log de
   los scripts (`Write-Host`, `assert`).
 - **Español**: todo `.md`, el contenido que lee un estudiante o el profesor (texto de
-  preguntas, nombres de equipo), mensajes de commit (`[PREFIJO] ...`), nombres de rama.
+  preguntas, nombres de equipo), mensajes de commit (`prefijo: Se hace tal cosa`, sin corchetes: `feat:`, `fix:`, `infra:`, `docs:`, `ref:`), nombres de rama.
 - **Sin traducir**: nombres de carpetas/archivos ya establecidos (`formatos/`,
   `correcciones/`, `corte-preguntas-1/`, `crear-repos-trimestre.ps1`, `equipos.json`, ...).
 

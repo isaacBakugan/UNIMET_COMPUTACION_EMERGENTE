@@ -26,7 +26,7 @@ param(
     # Local folder where team repos get cloned/updated
     [string]$LocalDestination = "$PSScriptRoot/../.repos-trimestre-actual",
 
-    [string]$CommitMessage = "[INFRA] Se actualiza el template del repo de grupo",
+    [string]$CommitMessage = "infra: Se actualiza el template del repo de grupo",
 
     # File NAMES (not paths) that are never overwritten if they already exist in the target
     # repo, matched at any depth. Matching by name (not full relative path) is deliberate:
@@ -39,6 +39,20 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# Runs git and throws on a non-zero exit code. Needed because in Windows PowerShell 5.1 with
+# $ErrorActionPreference = "Stop", any stderr line from git (push progress, "To https://...")
+# is raised as an error even when git succeeded, and a real failure (exit code != 0) is
+# otherwise ignored: both led to a silent failed push.
+function Invoke-Git {
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & git @args 2>&1 | ForEach-Object { Write-Host "  $_" }
+        if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') failed (exit $LASTEXITCODE)" }
+    }
+    finally { $ErrorActionPreference = $previous }
+}
 
 $statusPath = Join-Path $InputsPath "estado.json"
 if (-not (Test-Path $statusPath)) {
@@ -59,7 +73,9 @@ if (-not (Test-Path $LocalDestination)) {
 }
 
 $templateRoot = (Resolve-Path $RepoTemplatePath).Path
-$templateFiles = Get-ChildItem -Path $templateRoot -Recurse -File
+# Bytecode is never part of the template, even if pytest left it in the local folder
+$templateFiles = Get-ChildItem -Path $templateRoot -Recurse -File -Force |
+    Where-Object { $_.FullName -notmatch '[\\/]__pycache__[\\/]' -and $_.Extension -ne ".pyc" }
 
 foreach ($repo in $repos) {
 
@@ -81,7 +97,7 @@ foreach ($repo in $repos) {
         }
         else {
             Push-Location $localPath
-            try { git pull } finally { Pop-Location }
+            try { Invoke-Git pull } finally { Pop-Location }
         }
 
         foreach ($file in $templateFiles) {
@@ -108,14 +124,29 @@ foreach ($repo in $repos) {
 
         if ($DryRun) { continue }
 
+        # Removes bytecode committed by earlier runs (git add -A below stages the deletion);
+        # the template's .gitignore keeps it from coming back.
+        Get-ChildItem -Path $localPath -Recurse -Directory -Force -Filter "__pycache__" |
+            Where-Object { $_.FullName -notmatch '[\\/]\.git[\\/]' } |
+            Remove-Item -Recurse -Force
+
         Push-Location $localPath
         try {
-            git add -A
+            Invoke-Git add -A
             $changes = git status --porcelain
+            $committed = $false
             if ($changes) {
-                git commit -m $CommitMessage
-                git push
-                Write-Host "  Updated and pushed"
+                Invoke-Git commit -m $CommitMessage
+                $committed = $true
+            }
+
+            # A commit from a previous run whose push failed leaves the tree clean but the branch
+            # ahead of origin: push based on commits ahead, not on whether this run committed.
+            $ahead = [int](git rev-list --count "@{u}..HEAD")
+            if ($ahead -gt 0) {
+                Invoke-Git push
+                if ($committed) { Write-Host "  Updated and pushed" }
+                else { Write-Host "  Pushed $ahead pending commit(s) from a previous run" }
             }
             else {
                 Write-Host "  No changes against the template, not pushing"
