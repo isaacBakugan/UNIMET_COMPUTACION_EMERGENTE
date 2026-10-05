@@ -252,6 +252,11 @@ La columna **Revisar** marca los casos donde el criterio es visual y conviene ab
   exacto; si el estudiante pushea otro commit, la decisión caduca y el corrector avisa.
 - Los tests del corrector corren con `task test` (`pytest correcciones/tests`).
 
+### Corregir la Tarea 2 (perceptrón multicapa)
+**Pendiente de implementar por la preparadora.** La configuración, la rúbrica y las directrices (entrega tardía individual,
+orden alfabético, reporte en consola + `notas-sheets.csv` para copiar a Sheets) están en
+[correcciones/tarea-2/README.md](correcciones/tarea-2/README.md).
+
 ### Corregir el corte de preguntas 1 y obtener las notas
 ```powershell
 python correcciones/calificador_corte.py            # nota de todos los equipos y estudiantes

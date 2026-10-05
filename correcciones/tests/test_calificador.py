@@ -47,6 +47,11 @@ def test_gate_every_assignment_config_is_loadable_and_complete(assignment_dir):
             assert set(csv.DictReader(file).fieldnames) == columns, f"Unexpected columns in {assignment_dir.name}/{name}"
 
 
+def test_gate_tarea_1_rubric_keeps_the_criteria_the_sandbox_runs():
+    # load_rubric accepts any criteria (tarea-2 has its own); the Tarea 1 corrector depends on these four.
+    assert tuple(load_rubric(CORRECTIONS_DIR / "tarea-1" / "tarea.json").criteria) == CASE_KEYS
+
+
 def test_gate_every_sandbox_case_has_its_dataset():
     assert set(CASE_INPUTS) == set(CASE_KEYS)
     for case, (csv_path, _) in CASE_INPUTS.items():

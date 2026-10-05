@@ -42,8 +42,9 @@ class Rubric:
 def load_rubric(path: Path) -> Rubric:
     config = json.loads(path.read_text(encoding="utf-8-sig"))
     items = config["criteria"]
-    if tuple(item["key"] for item in items) != CASE_KEYS:
-        raise ValueError(f"The rubric must contain exactly these criteria, in order: {CASE_KEYS}")
+    keys = [item["key"] for item in items]
+    if not keys or len(set(keys)) != len(keys):
+        raise ValueError(f"The rubric needs at least one criterion and unique keys: {keys}")
     for item in items:
         scores = [item[outcome] for outcome in OUTCOMES]
         if not all(type(score) is int for score in scores) or not scores[0] > scores[1] > scores[2] >= 0:
@@ -64,7 +65,7 @@ def load_rubric(path: Path) -> Rubric:
 
 def rubric_grade(rubric: Rubric, outcomes: dict[str, str]) -> tuple[int, int]:
     """Return (rubric points, grade on the final scale before any late penalty)."""
-    total = sum(rubric.points(case, outcomes[case]) for case in CASE_KEYS)
+    total = sum(rubric.points(case, outcomes[case]) for case in rubric.criteria)
     grade = round(total * rubric.maximum_grade / rubric.max_points)
     return total, max(rubric.minimum_grade, grade)
 

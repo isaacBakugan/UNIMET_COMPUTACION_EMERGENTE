@@ -389,6 +389,8 @@ def main() -> int:
     args = parser.parse_args()
 
     rubric = load_rubric(ASSIGNMENT_CONFIG / "tarea.json")
+    if tuple(rubric.criteria) != CASE_KEYS:
+        raise ValueError(f"The Tarea 1 rubric must contain exactly these criteria, in order: {CASE_KEYS}")
     if args.cutoff:
         to_utc_iso(args.cutoff)
         rubric = replace(rubric, cutoff=args.cutoff)

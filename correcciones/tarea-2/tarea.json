@@ -1,0 +1,14 @@
+{
+  "name": "Tarea 2: perceptrón multicapa",
+  "cutoff": "2099-12-31T23:59:00-04:00",
+  "minimum_grade": 1,
+  "maximum_grade": 20,
+  "late_penalty_points": 2,
+  "excluded_teams": ["grupo-control"],
+  "criteria": [
+    {"key": "given_network_2d_2class", "description": "La red entregada clasifica el ejemplo de 2 dimensiones y 2 clases", "correct": 25, "incorrect": 15, "no_result": 0},
+    {"key": "given_network_3d_4class", "description": "La red entregada clasifica el ejemplo de 3 dimensiones y 4 clases", "correct": 25, "incorrect": 15, "no_result": 0},
+    {"key": "hidden_training_2d_2class", "description": "Los hiperparámetros entrenan una red que clasifica un ejemplo no visto de 2 dimensiones y 2 clases", "correct": 25, "incorrect": 15, "no_result": 0},
+    {"key": "hidden_training_3d_4class", "description": "Los hiperparámetros entrenan una red que clasifica un ejemplo no visto de 3 dimensiones y 4 clases", "correct": 25, "incorrect": 15, "no_result": 0}
+  ]
+}
