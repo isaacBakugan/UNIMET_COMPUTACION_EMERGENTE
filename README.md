@@ -189,6 +189,12 @@ Cada trimestre reutiliza este repo, agrega:
 │   │   ├── preguntas.json          # "pongan sus preguntas aquí" — esto sí se corrige
 │   │   └── tests/
 │   │       └── test_validar_entregable_1.py
+│   ├── corte-preguntas-2/          # Entregable 2 (lecturas de las semanas 3, 4 y martes de la 5; 50 preguntas)
+│   │   ├── README.md
+│   │   ├── ejemplo-preguntas.json  # referencia de formato, no se evalúa
+│   │   ├── preguntas.json          # "pongan sus preguntas aquí" — esto sí se corrige
+│   │   └── tests/
+│   │       └── test_validar_entregable_2.py
 │   └── tarea-1-codigo/              # Tarea 1: Perceptrón
 │       ├── README.md
 │       ├── assets/                 # datasets reales (no_separables.csv, fuzzy_separables.csv)
@@ -291,6 +297,28 @@ las ejecuta desde este repo (nunca la copia del alumno), aplica la entrega tard�
   el email del autor del commit, mapeado en `correcciones/corte-preguntas-1/autores.csv`) recibe la mejor entre esa nota y la
   de la versión final con 2 puntos menos. Un autor tardío que no esté en `autores.csv` sale como ADVERTENCIA y no penaliza a
   nadie hasta que se asigne.
+
+### Corregir el corte de preguntas 2
+```powershell
+python correcciones/calificador_corte.py --corte corte-preguntas-2            # todos los equipos y estudiantes
+python correcciones/calificador_corte.py --corte corte-preguntas-2 --update   # trae antes los cambios de GitHub
+```
+Mismo corrector, misma salida y misma regla de entrega tardía individual que el corte 1; cambia la configuración
+(`correcciones/corte-preguntas-2/corte.json`, con su propio `autores.csv`) y las pruebas
+(`repo-template/corte-preguntas-2/tests/`). Es un corte de **50 preguntas** (5 lecturas: martes y jueves de las semanas 3 y 4,
+más el martes de la semana 5), y los criterios son más finos, **todos deterministas** (sin LLM):
+
+| Criterio   | Pts | Pruebas |
+|------------|----:|---------|
+| count      | 11  | 50 preguntas en total y 5 V/F + 5 selección por cada lectura |
+| format     |  3  | JSON/campos, sin placeholders, enunciado ≥ 5 palabras, sin duplicados ni casi-duplicados (similitud ≥ 85 %), 4 opciones exactas sin repetidas, sin "todas/ninguna de las anteriores", dificultad 1-10, `source_quote` ≥ 20 caracteres |
+| difficulty |  3  | ≥ 10 preguntas en cada banda: 1-3, 4-6 y 7-10 |
+| balance    |  3  | V/F entre 40 % y 60 % `Verdadero`; ninguna posición A-D concentra > 50 % de las correctas |
+
+- `count` es la mayoría de la nota (11/20). La nota mínima sigue siendo 1.
+- `cutoff` de `corte.json` es un **centinela (2099-12-31)**: mientras no se fije la fecha real, el reporte sale PRELIMINAR.
+  También se puede pasar con `--cutoff`.
+- `source_quote` solo se valida por longitud; la verificación contra el texto de la lectura (y la calidad con LLM) es la siguiente fase.
 
 ### Descargar informe
 ```bash

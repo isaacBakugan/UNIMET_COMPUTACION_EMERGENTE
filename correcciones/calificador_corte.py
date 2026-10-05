@@ -1,15 +1,15 @@
-"""Grade the `corte-preguntas-1` deliverable of every team with one command.
+"""Grade a `corte-preguntas-N` deliverable of every team with one command.
 
-    python correcciones/calificador_corte.py            # grade everything
+    python correcciones/calificador_corte.py            # grade everything (corte-preguntas-1)
+    python correcciones/calificador_corte.py --corte corte-preguntas-2   # another corte
     python correcciones/calificador_corte.py --update   # fetch the team repos from GitHub first
     python correcciones/calificador_corte.py --team G1  # only one team
 
 The deliverable (`preguntas.json`) is per team, but lateness is INDIVIDUAL:
   * every student gets the grade of the team's file at the last commit before the cutoff, no penalty;
   * a student who pushed commits after the cutoff (identified by commit author email, see
-    `corte-preguntas-1/autores.csv`) gets max(cutoff version, latest version - late penalty).
-The authoritative unit tests (format, requested questions, easy and hard questions) are run for each
-version. Writes `notas.csv` (per team), `notas-sheets.csv` (per student, alphabetical, ready for Google
+    `<corte>/autores.csv`) gets max(cutoff version, latest version - late penalty).
+The authoritative unit tests of the corte (see the criteria of its `corte.json`) are run for each version. Writes `notas.csv` (per team), `notas-sheets.csv` (per student, alphabetical, ready for Google
 Sheets) and `informe.md`.
 """
 
@@ -30,7 +30,7 @@ from entregas import (commit_at_cutoff, commit_date, commits_after_cutoff_by_aut
 from lista import ListEntry, normalize, sort_key
 
 ROOT = Path(__file__).resolve().parent.parent
-CONFIG_DIR = ROOT / "correcciones" / "corte-preguntas-1"
+DEFAULT_CORTE = "corte-preguntas-1"
 STATE_FILE = ROOT / "trimestre-actual" / "estado.json"
 DELIVERY_LIST_FILE = ROOT / "trimestre-actual" / "lista-entrega.csv"
 
@@ -211,7 +211,8 @@ def write_outputs(rows: list[TeamRow], students: list[dict], config: CorteConfig
               f"**individual**: cada estudiante recibe la nota de la versión del equipo al cierre; quien hizo commits "
               f"posteriores al cierre (según `autores.csv`) recibe la mejor entre esa nota y la de la versión final con "
               f"{config.late_penalty_points} puntos menos. Las notas salen de ejecutar las mismas pruebas unitarias que corren los "
-              "estudiantes. Cada criterio vale 5 puntos, proporcional a las pruebas que pasan.", "",
+              "estudiantes. " + f"La nota máxima es {config.maximum_grade}; puntos por criterio: "
+              + ", ".join(f"{c.key} {c.points}" for c in config.criteria) + ", proporcionales a las pruebas que pasan.", "",
               "| Equipo | Commits tardíos | " + " | ".join(c.key for c in config.criteria) + " | Pruebas | Nota al cierre | Versión final (-2) |",
               "|---|---|" + "---:|" * len(config.criteria) + "---:|---:|---:|"]
     for row in rows:
@@ -254,14 +255,14 @@ def write_outputs(rows: list[TeamRow], students: list[dict], config: CorteConfig
 def print_summary(rows: list[TeamRow], students: list[dict], config: CorteConfig, out_dir: Path, preliminary: bool) -> None:
     if preliminary:
         print("\n*** PRELIMINAR: el cierre aún no ha ocurrido; se evalúa el último commit actual ***")
-    print(f"\n{'Equipo':<12} {'Tardíos':<10} " + " ".join(f"{c.key:>6}" for c in config.criteria) + "  Pruebas  Cierre  Final(-2)")
+    print(f"\n{'Equipo':<12} {'Tardíos':<10} " + " ".join(f"{c.key:>{max(6, len(c.key))}}" for c in config.criteria) + "  Pruebas  Cierre  Final(-2)")
     for row in rows:
         if row.cutoff_result is None:
             print(f"{row.team:<12} {team_cell(row):<10} ERROR: {row.error}")
             continue
         scores = {s.key: s for s in row.cutoff_result.scores}
         final = row.late_version_grade(config)
-        print(f"{row.team:<12} {team_cell(row):<10} " + " ".join(f"{float(scores[c.key].points):>6.1f}" for c in config.criteria)
+        print(f"{row.team:<12} {team_cell(row):<10} " + " ".join(f"{float(scores[c.key].points):>{max(6, len(c.key))}.1f}" for c in config.criteria)
               + f"  {row.cutoff_result.tests_passed:>3}/{row.cutoff_result.tests_total:<3}  {row.cutoff_grade(config):>6}  {'-' if final is None else final:>9}")
     print(f"\n{'#':>2} {'Apellido, nombre':<28} {'Equipo':<10} Nota  Observación")
     for number, student in enumerate(students, 1):
@@ -273,13 +274,15 @@ def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")  # names have accents; Windows consoles default to cp1252
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--clones", type=Path, help="Folder with the local clones (default: .repos-trimestre-<term>)")
-    parser.add_argument("--output", type=Path, help="Output folder (default: correcciones/resultados/<term>/corte-preguntas-1)")
+    parser.add_argument("--corte", default=DEFAULT_CORTE, help=f"Corte folder under correcciones/ (default: {DEFAULT_CORTE})")
+    parser.add_argument("--output", type=Path, help="Output folder (default: correcciones/resultados/<term>/<corte>)")
     parser.add_argument("--cutoff", help="Override the cutoff of corte.json (ISO 8601 with timezone)")
     parser.add_argument("--team", action="append", help="Grade only this team (repeatable)")
     parser.add_argument("--update", action="store_true", help="Clone/fetch the team repos from GitHub first")
     args = parser.parse_args()
 
-    config = load_config(CONFIG_DIR / "corte.json")
+    config_dir = ROOT / "correcciones" / args.corte
+    config = load_config(config_dir / "corte.json")
     if args.cutoff:
         to_utc_iso(args.cutoff)
         config = replace(config, cutoff=args.cutoff)
@@ -290,8 +293,8 @@ def main() -> int:
         if not teams:
             raise ValueError(f"No active team matches {args.team}")
     clones = args.clones or ROOT / f".repos-trimestre-{term}"
-    out_dir = args.output or ROOT / "correcciones" / "resultados" / term / "corte-preguntas-1"
-    authors = load_authors(CONFIG_DIR / "autores.csv")
+    out_dir = args.output or ROOT / "correcciones" / "resultados" / term / args.corte
+    authors = load_authors(config_dir / "autores.csv")
     preliminary = datetime.now(timezone.utc) < datetime.fromisoformat(to_utc_iso(config.cutoff).replace("Z", "+00:00"))
 
     rows = []

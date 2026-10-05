@@ -1,4 +1,4 @@
-"""Grade the `corte-preguntas-1` deliverable by running the SAME pytest file students run.
+"""Grade a `corte-preguntas-N` deliverable by running the SAME pytest file students run.
 
 The authoritative tests live in `repo-template/` (what students receive). The grader runs that file
 from the central repo against the team's `preguntas.json` at the cutoff commit (env QUESTIONS_FILE),

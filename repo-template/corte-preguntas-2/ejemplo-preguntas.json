@@ -1,0 +1,147 @@
+{
+  "team": "grupo-ejemplo",
+  "assignment": "corte-preguntas-2",
+  "_note": "This is just a formatting example, one question per reading. The real deliverable has 10 questions per reading (50 in total, 5 readings), 4 options in every multiple choice and a literal quote from the reading in source_quote (the quotes below are illustrative).",
+  "questions": [
+    {
+      "id": "tue3-tf-1",
+      "reading": "tuesday-week-3",
+      "type": "true_false",
+      "statement": "La fotosíntesis solo ocurre durante el día.",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Falso",
+      "difficulty_level": 3,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    },
+    {
+      "id": "tue3-mc-1",
+      "reading": "tuesday-week-3",
+      "type": "multiple_choice",
+      "statement": "¿Cuál de los siguientes es un gas de efecto invernadero?",
+      "options": [
+        "Oxígeno",
+        "Nitrógeno",
+        "Dióxido de carbono",
+        "Helio"
+      ],
+      "correct_option": "Dióxido de carbono",
+      "difficulty_level": 5,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    },
+    {
+      "id": "thu3-tf-1",
+      "reading": "thursday-week-3",
+      "type": "true_false",
+      "statement": "El agua hierve a 100°C al nivel del mar.",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    },
+    {
+      "id": "thu3-mc-1",
+      "reading": "thursday-week-3",
+      "type": "multiple_choice",
+      "statement": "¿Cuál de las siguientes NO es una fuente de energía renovable?",
+      "options": [
+        "Solar",
+        "Eólica",
+        "Carbón",
+        "Hidráulica"
+      ],
+      "correct_option": "Carbón",
+      "difficulty_level": 6,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    },
+    {
+      "id": "tue4-tf-1",
+      "reading": "tuesday-week-4",
+      "type": "true_false",
+      "statement": "Ejemplo de pregunta V/F sobre la lectura del martes de la semana 4.",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 4,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    },
+    {
+      "id": "tue4-mc-1",
+      "reading": "tuesday-week-4",
+      "type": "multiple_choice",
+      "statement": "Ejemplo de pregunta de selección simple sobre la lectura del martes de la semana 4.",
+      "options": [
+        "Opción A",
+        "Opción B",
+        "Opción C",
+        "Opción D"
+      ],
+      "correct_option": "Opción B",
+      "difficulty_level": 4,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    },
+    {
+      "id": "thu4-tf-1",
+      "reading": "thursday-week-4",
+      "type": "true_false",
+      "statement": "Ejemplo de pregunta V/F sobre la lectura del jueves de la semana 4.",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Falso",
+      "difficulty_level": 7,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    },
+    {
+      "id": "thu4-mc-1",
+      "reading": "thursday-week-4",
+      "type": "multiple_choice",
+      "statement": "Ejemplo de pregunta de selección simple sobre la lectura del jueves de la semana 4.",
+      "options": [
+        "Opción A",
+        "Opción B",
+        "Opción C",
+        "Opción D"
+      ],
+      "correct_option": "Opción D",
+      "difficulty_level": 8,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    },
+    {
+      "id": "tue5-tf-1",
+      "reading": "tuesday-week-5",
+      "type": "true_false",
+      "statement": "Ejemplo de pregunta V/F sobre la lectura del martes de la semana 5.",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 2,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    },
+    {
+      "id": "tue5-mc-1",
+      "reading": "tuesday-week-5",
+      "type": "multiple_choice",
+      "statement": "Ejemplo de pregunta de selección simple sobre la lectura del martes de la semana 5.",
+      "options": [
+        "Opción A",
+        "Opción B",
+        "Opción C",
+        "Opción D"
+      ],
+      "correct_option": "Opción C",
+      "difficulty_level": 9,
+      "source_quote": "Fragmento copiado literalmente de la lectura que respalda la respuesta correcta."
+    }
+  ]
+}

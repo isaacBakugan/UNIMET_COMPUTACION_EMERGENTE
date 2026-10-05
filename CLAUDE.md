@@ -84,3 +84,18 @@ estudiante en orden alfabético, `informe.md`).
 - Alcance de la regla de fáciles (< 3) / difíciles (> 7): constante `DIFFICULTY_SCOPE` del test (`"total"` o `"reading"`).
 - La lista de entrega alfabética (`trimestre-actual/lista-entrega.csv`) es del trimestre y la comparten todas las
   correcciones; en el corte cada integrante recibe la nota de su equipo.
+
+## Corte de preguntas 2: 50 preguntas, criterios deterministas
+
+`python correcciones/calificador_corte.py --corte corte-preguntas-2` (task `grade-corte-2`). Mismo corrector y misma
+regla de entrega tardía individual; config en `correcciones/corte-preguntas-2/` (`corte.json`, `autores.csv` propio).
+
+- **50 preguntas, 5 lecturas** (martes y jueves semanas 3 y 4 + martes semana 5): 5 V/F + 5 selección por lectura.
+- Criterios (sobre 20): `count` 11 (la mayoría), `format` 3, `difficulty` 3 (≥10 preguntas en cada banda 1-3 / 4-6 / 7-10),
+  `balance` 3 (V/F 40-60 % `Verdadero`; ninguna posición A-D > 50 % de las correctas). Todos deterministas, sin LLM.
+- Selección simple: **exactamente 4 opciones**, sin repetidas ni "todas/ninguna de las anteriores". Cada pregunta lleva
+  `source_quote` (cita literal de la lectura, ≥ 20 caracteres); la verificación contra el texto de la lectura y la
+  evaluación de calidad con LLM son la fase siguiente.
+- Los escenarios de puntaje están en `correcciones/tests/test_corte_preguntas_2.py`; los gates genéricos de
+  `test_corte.py` ya cubren cualquier `corte-*/corte.json` (cada test asignado a un criterio, plantilla sin tocar = nota mínima).
+- `cutoff` de `corte.json` está en 2099-12-31 hasta que se fije la fecha real (el reporte sale PRELIMINAR).

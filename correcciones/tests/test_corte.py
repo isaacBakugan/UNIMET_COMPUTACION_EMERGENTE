@@ -57,7 +57,9 @@ def test_gate_every_test_of_the_template_belongs_to_exactly_one_criterion(config
 @pytest.mark.parametrize("config_file", CONFIG_FILES, ids=lambda path: path.parent.name)
 def test_gate_the_untouched_template_scores_the_minimum_grade(config_file, tmp_path):
     config = load_config(config_file)
-    result = grade_file(config, TEMPLATE_QUESTIONS, tmp_path)
+    template = ROOT / "repo-template" / config.folder / config.deliverable   # each corte ships its own template
+    assert template.exists(), f"Missing template {template}"
+    result = grade_file(config, template, tmp_path)
     assert result.tests_passed == 0, f"The untouched template passes tests, it earns points for nothing: {result.failures()[:3]}"
     assert final_grade(config, result.points) == config.minimum_grade
 
