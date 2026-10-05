@@ -102,7 +102,8 @@ Los resultados quedan en `correcciones/resultados/<trimestre>/<tarea>/`:
 
 Tareas futuras: ver [correcciones/tarea-2/README.md](correcciones/tarea-2/README.md) y
 [correcciones/tarea-3/README.md](correcciones/tarea-3/README.md) y
-[correcciones/tarea-4/README.md](correcciones/tarea-4/README.md) (configuración y directrices ya dejadas; los
+[correcciones/tarea-4/README.md](correcciones/tarea-4/README.md) y
+[correcciones/tarea-5/README.md](correcciones/tarea-5/README.md) (configuración y directrices ya dejadas; los
 correctores están pendientes).
 
 ## 4. Convenciones ya probadas (Tarea 1): se siguen, no se reinventan

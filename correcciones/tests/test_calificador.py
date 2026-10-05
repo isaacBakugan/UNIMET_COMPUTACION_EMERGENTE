@@ -127,6 +127,18 @@ def test_tarea_4_weights_each_criterion_by_its_own_scale():
     assert rubric_grade(rubric, only_b_adequate)[0] == 60
 
 
+def test_tarea_5_is_a_group_task_graded_half_and_half():
+    rubric = load_rubric(CORRECTIONS_DIR / "tarea-5" / "tarea.json")
+    assert tuple(rubric.criteria) == ("blank_grid_add_zone", "loaded_city_updates")
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "correct")) == (100, 20)
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "no_result")) == (0, rubric.minimum_grade)
+    assert rubric_grade(rubric, {"blank_grid_add_zone": "correct", "loaded_city_updates": "no_result"})[0] == 50
+    # One deliverable per team: the support list has one row per team, not three per team.
+    with (CORRECTIONS_DIR / "tarea-5" / "alumnos.csv").open(newline="", encoding="utf-8-sig") as file:
+        teams = [row["team"] for row in csv.DictReader(file)]
+    assert teams and len(teams) == len(set(teams)), "tarea-5/alumnos.csv must list each team exactly once"
+
+
 # --- Case scoring ---
 
 def test_color_category_tolerates_shades():

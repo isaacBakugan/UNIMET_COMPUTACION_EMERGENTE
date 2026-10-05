@@ -10,7 +10,7 @@ a este mismo repo, no un repo nuevo por tarea.
   formato exacto y los criterios están en la guía de la tarea correspondiente, en el repo
   central del curso.
 - **`perceptron_1.py`, `perceptron_2.py`, `perceptron_3.py`**: archivos base para la tarea del perceptrón.
-- **`tarea-N-codigo/`**: una carpeta por tarea de código, cada una con su propio `README.md` (enunciado y rúbrica). La Tarea 3 se entrega en Jupyter Notebooks (`pytorch_fashion_1.ipynb`, `_2`, `_3`); la Tarea 4, en `algoritmo_genetico_N.py`.
+- **`tarea-N-codigo/`**: una carpeta por tarea de código, cada una con su propio `README.md` (enunciado y rúbrica). La Tarea 3 se entrega en Jupyter Notebooks (`pytorch_fashion_1.ipynb`, `_2`, `_3`); la Tarea 4, en `algoritmo_genetico_N.py`; la Tarea 5 (**grupal**), en un único `simcity.py` por repo.
 - **`tests/`**: validadores que corren localmente antes de subir nada.
 - **`requirements.txt`**: dependencias para correr los tests.
 

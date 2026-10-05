@@ -265,6 +265,10 @@ directrices en [correcciones/tarea-3/README.md](correcciones/tarea-3/README.md).
 **Pendiente de implementar por la preparadora.** Rúbrica de 4 niveles con pesos 20/20/30/30, contrato de las poblaciones
 y funciones de referencia con sus óptimos en [correcciones/tarea-4/README.md](correcciones/tarea-4/README.md).
 
+### Corregir la Tarea 5 (Sim City, grupal)
+**Pendiente de implementar por la preparadora.** Un solo `simcity.py` por repo, corrido por stdin; nota del equipo para
+todos sus integrantes. Detalle en [correcciones/tarea-5/README.md](correcciones/tarea-5/README.md).
+
 ### Corregir el corte de preguntas 1 y obtener las notas
 ```powershell
 python correcciones/calificador_corte.py            # nota de todos los equipos y estudiantes
