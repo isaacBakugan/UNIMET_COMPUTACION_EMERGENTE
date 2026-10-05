@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+from lista import BY_TEAM, UNASSIGNED, ListEntry, assign_students, sort_key
 from entregas import (ASSIGNMENT_DIR, PERCEPTRON_FILES, commit_at_cutoff, commit_date, commit_exists,
                       export_assignment, static_review, student_identity, to_utc_iso)
 from rubrica import (CASE_KEYS, CaseResult, Rubric, final_grade, load_rubric, rubric_grade, score_case)
@@ -42,6 +43,9 @@ class Submission:
     national_id: str = ""
     status: str = "graded"          # graded | no_submission | does_not_compile | repo_error
     penalty: int = 0
+    last_name: str = ""
+    first_name: str = ""
+    assignment: str = UNASSIGNED    # header | by_team | unassigned (see lista.py)
     notes: list[str] = field(default_factory=list)
     source_dir: Path | None = None
     cases: dict[str, CaseResult] = field(default_factory=dict)
@@ -149,6 +153,37 @@ def fill_identity_from_roster(submission: Submission, entry: dict | None, warnin
         submission.national_id = national_id
 
 
+def load_delivery_list(path: Path) -> list[ListEntry]:
+    entries = [ListEntry(r["last_name"].strip(), r["first_name"].strip(), r["team"].strip()) for r in read_csv(path)]
+    if len({(sort_key(entry), entry.team.casefold()) for entry in entries}) != len(entries):
+        raise ValueError(f"Duplicated student in {path.name}")
+    return entries
+
+
+def order_by_delivery_list(submissions: list[Submission], entries: list[ListEntry], warnings: list[str]) -> list[Submission]:
+    """Attach list entries to submissions and return them in delivery (alphabetical) order."""
+    graded_teams = {s.team.casefold() for s in submissions}
+    entries = [entry for entry in entries if entry.team.casefold() in graded_teams]
+    assigned, list_warnings = assign_students([(s.team, s.file, s.student_name) for s in submissions], entries)
+    warnings.extend(list_warnings)
+    position = {entry: index for index, entry in enumerate(sorted(entries, key=sort_key))}
+    for s in submissions:
+        match = assigned.get((s.team, s.file))
+        if not match:
+            continue
+        entry, how = match
+        s.last_name, s.first_name, s.assignment = entry.last_name, entry.first_name, how
+        if how == BY_TEAM:
+            s.student_name = s.student_name or entry.full_name
+            s.notes.append("Asignación PROVISIONAL por equipo: el archivo no trae nombre; confirmar el estudiante.")
+
+    def order(s: Submission) -> tuple[int, str, str]:
+        match = assigned.get((s.team, s.file))
+        return (position[match[0]] if match else len(position)), s.team.casefold(), s.file
+
+    return sorted(submissions, key=order)
+
+
 def apply_overrides(submissions: list[Submission], overrides: list[dict], warnings: list[str]) -> None:
     by_key = {(s.team, s.file, s.commit): s for s in submissions}
     for item in overrides:
@@ -204,6 +239,7 @@ def build_rows(submissions: list[Submission], rubric: Rubric) -> list[dict]:
         outcomes = {case: s.cases[case].outcome for case in CASE_KEYS}
         points, rubric_value = rubric_grade(rubric, outcomes)
         row = {
+            "last_name": s.last_name, "first_name": s.first_name, "assignment": s.assignment,
             "team": s.team, "file": s.file, "student_name": s.student_name, "national_id": s.national_id,
             "commit": s.commit, "commit_date": s.commit_date, "status": s.status,
             **{case: rubric.points(case, outcomes[case]) for case in CASE_KEYS},
@@ -225,6 +261,15 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
         writer.writeheader()
         writer.writerows(rows)
 
+    # One row per student in delivery order: the Nota column pastes straight into Google Sheets.
+    with (out_dir / "notas-sheets.csv").open("w", newline="", encoding="utf-8-sig") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Apellido", "Nombre", "Equipo", "Nota", "Observación"])
+        for row in rows:
+            observation = {BY_TEAM: "Provisional: asignado por equipo",
+                           UNASSIGNED: "Sin entrada en la lista de entrega"}.get(row["assignment"], "")
+            writer.writerow([row["last_name"], row["first_name"], row["team"], row["final_grade"], observation])
+
     lines = [f"# Corrección automática: {rubric.name} ({term})", "",
              f"Cierre: {rubric.cutoff}. Cada archivo usa el último commit anterior al cierre, salvo las "
              "entregas tardías aceptadas expresamente. Los puntajes de la rúbrica salen de ejecutar cada "
@@ -232,17 +277,17 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
              "casos donde conviene mirar la gráfica (carpeta `evidence/`) porque el criterio es visual.", "",
              f"Escala: nota por rúbrica proporcional sobre {rubric.maximum_grade}, mínimo {rubric.minimum_grade}; "
              "luego se resta el descuento por entrega tardía.", "",
-             "| Equipo | Estudiante / archivo | C1 | C2 | C3 | C4 | Rúbrica | Descuento | Nota | Revisar |",
-             "|---|---|---:|---:|---:|---:|---:|---:|---:|---|"]
-    for row in rows:
-        who = row["student_name"] or f"Sin nombre: {row['file']}"
-        lines.append(f"| {row['team']} | {who} | " + " | ".join(str(row[case]) for case in CASE_KEYS)
+             "| # | Apellido, nombre | Equipo / archivo | C1 | C2 | C3 | C4 | Rúbrica | Descuento | Nota | Revisar |",
+             "|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---|"]
+    for number, row in enumerate(rows, 1):
+        who = display_name(row) + (" *(provisional)*" if row["assignment"] == BY_TEAM else "")
+        lines.append(f"| {number} | {who} | {row['team']}/{row['file']} | " + " | ".join(str(row[case]) for case in CASE_KEYS)
                      + f" | {row['rubric_grade']} | {row['penalty_points']} | **{row['final_grade']}** | {row['needs_review'] or '-'} |")
     if warnings:
         lines += ["", "## Advertencias", ""] + [f"- {text}" for text in warnings]
     lines += ["", "## Detalle por archivo", ""]
     for s, row in zip(submissions, rows):
-        who = row["student_name"] or f"Sin nombre ({row['file']})"
+        who = display_name(row)
         lines += [f"### {who} — {row['team']}/{row['file']} — {row['final_grade']}/{rubric.maximum_grade}", "",
                   f"Commit evaluado: `{row['commit'] or 'ninguno'}` ({row['commit_date'] or 'sin fecha'}). Estado: {s.status}.", ""]
         for case in CASE_KEYS:
@@ -260,13 +305,23 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
     (out_dir / "informe.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+def display_name(row: dict) -> str:
+    """'Apellido, Nombre' from the delivery list; falls back to the name found in the file header."""
+    if row["last_name"]:
+        return f"{row['last_name']}, {row['first_name']}"
+    return row["student_name"] or "Sin nombre"
+
+
 def print_summary(rows: list[dict], out_dir: Path) -> None:
-    print(f"\n{'Equipo':<12} {'Archivo':<16} {'Estudiante':<24} C1  C2  C3  C4  Rúb  Desc  Nota  Revisar")
-    for row in rows:
-        print(f"{row['team']:<12} {row['file']:<16} {(row['student_name'] or '-')[:23]:<24} "
+    print(f"\n{'#':>2} {'Apellido, nombre':<26} {'Equipo':<10} {'Archivo':<16} C1  C2  C3  C4  Rúb  Desc  Nota  Revisar")
+    for number, row in enumerate(rows, 1):
+        who = display_name(row) + (" *" if row["assignment"] == BY_TEAM else "")
+        print(f"{number:>2} {who[:25]:<26} {row['team']:<10} {row['file']:<16} "
               + "  ".join(f"{row[case]:>2}" for case in CASE_KEYS)
               + f"  {row['rubric_grade']:>3}  {row['penalty_points']:>4}  {row['final_grade']:>4}  {row['needs_review'] or '-'}")
-    print(f"\nNotas: {out_dir / 'notas.csv'}\nInforme: {out_dir / 'informe.md'}")
+    if any(row["assignment"] == BY_TEAM for row in rows):
+        print("\n* asignación provisional por equipo (el archivo no trae nombre)")
+    print(f"\nNotas: {out_dir / 'notas.csv'}\nPara Google Sheets: {out_dir / 'notas-sheets.csv'}\nInforme: {out_dir / 'informe.md'}")
 
 
 def main() -> int:
@@ -298,6 +353,7 @@ def main() -> int:
     check_runtime()
 
     warnings: list[str] = []
+    delivery_list = load_delivery_list(ASSIGNMENT_CONFIG / "lista-entrega.csv")
     roster = {(r["team"], r["file"]): r for r in read_csv(ASSIGNMENT_CONFIG / "alumnos.csv")}
     late = {(r["team"], r["file"]): r for r in read_csv(ASSIGNMENT_CONFIG / "entregas-tardias.csv")}
     overrides = load_overrides(ASSIGNMENT_CONFIG / "decisiones-docente.json")
@@ -308,6 +364,7 @@ def main() -> int:
     apply_overrides(submissions, [o for o in overrides if o["team"] in graded_teams], warnings)
     run_all(submissions, out_dir / "evidence", args.workers, args.timeout)
     finalize_unrunnable(submissions)
+    submissions = order_by_delivery_list(submissions, delivery_list, warnings)
     rows = build_rows(submissions, rubric)
     write_outputs(rows, submissions, rubric, out_dir, term, warnings)
     print_summary(rows, out_dir)

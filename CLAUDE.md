@@ -36,3 +36,24 @@ sino estructura en inglés / contenido humano en español.
 - Un test/gate nuevo que valide formato de un entregable debe fallar en rojo cuando no hay
   solución todavía (no asumir contenido que no existe) — así se comprobó con cada test de
   este repo antes de darlo por bueno.
+
+## Corrección de tareas: un comando, orden alfabético
+
+`python correcciones/calificador.py` (task `grade`; `--update` refresca antes los clones) corrige la Tarea 1
+de todos los estudiantes y deja en `correcciones/resultados/<trimestre>/tarea-1/` (ignorado por git):
+`notas.csv`, `informe.md` y `notas-sheets.csv`. Detalle de uso en [README.md](README.md).
+
+- **Las notas se entregan en orden alfabético por apellido.** La fuente de ese orden es
+  `correcciones/tarea-N/lista-entrega.csv` (`last_name,first_name,team`, ya ordenada). Reporte de consola,
+  `informe.md`, `notas.csv` y `notas-sheets.csv` salen **siempre** en ese orden; nunca por equipo ni por archivo.
+- `notas-sheets.csv` (`Apellido,Nombre,Equipo,Nota,Observación`) es el que se copia a Google Sheets: la columna
+  `Nota` se pega tal cual, alineada con la lista de la planilla.
+- Un archivo se cruza con la lista por el nombre de su cabecera (sin distinguir acentos ni mayúsculas). Los que
+  no traen nombre se asignan **por equipo** a las entradas sin archivo y salen marcados **provisional**
+  (`assignment = by_team`): confirmar a mano y, cuando se conozca, corregir la cabecera/`alumnos.csv`.
+- Los nombres de equipo de `lista-entrega.csv` deben ser los de `trimestre-actual/estado.json` (`Cyberleak`,
+  `areperos`, `LUMON`...); el gate de `correcciones/tests/test_lista.py` falla si hay un typo o el orden se rompe.
+- Tarea nueva = carpeta `correcciones/tarea-N/` con `tarea.json`, `lista-entrega.csv`, `alumnos.csv`,
+  `entregas-tardias.csv` y `decisiones-docente.json`: los gates la descubren por disco, sin registrarla en ningún lado.
+- Las decisiones docentes (`decisiones-docente.json`) van atadas a un commit exacto: si el estudiante pushea otro,
+  caducan y el corrector avisa. Nunca se hardcodea un `if team == ...` en el código.
