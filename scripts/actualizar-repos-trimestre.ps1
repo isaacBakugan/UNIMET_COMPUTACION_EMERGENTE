@@ -32,7 +32,7 @@ param(
     # repo, matched at any depth. Matching by name (not full relative path) is deliberate:
     # every corte-preguntas-N/preguntas.json must be preserved too, not just the top-level
     # placeholder one, without having to list each corte folder here as it gets added.
-    [string[]]$PreservedFiles = @("preguntas.json", "perceptron_1.py", "perceptron_2.py", "perceptron_3.py"),
+    [string[]]$PreservedFiles = @("preguntas.json", "perceptron_1.py", "perceptron_2.py", "perceptron_3.py", "perceptron_multicapa_1.py", "perceptron_multicapa_2.py", "perceptron_multicapa_3.py"),
 
     # If passed, only prints the actions without running them
     [switch]$DryRun
