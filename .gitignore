@@ -5,3 +5,11 @@
 # Resultados de corrección (notas de estudiantes, fuentes exportadas y gráficas): se regeneran con calificador.py
 correcciones/resultados/
 __pycache__/
+# Red de seguridad: nunca versionar notas, informes ni evidencia de estudiantes, aunque alguien
+# los guarde fuera de correcciones/resultados/ (el código de los estudiantes vive en .repos-trimestre-*/)
+notas*.csv
+informe*.md
+evidence/
+sources/
+.pytest_cache/
+.venv/
