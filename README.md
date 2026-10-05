@@ -229,6 +229,26 @@ Cada trimestre reutiliza este repo, agrega:
 gh workflow run correcciones-paralelas.yml
 ```
 
+### Corregir la Tarea 1 (perceptrón) y obtener las notas
+```powershell
+python correcciones/calificador.py            # nota de todos los estudiantes
+python correcciones/calificador.py --update   # refresca antes los clones (tareas/verify_submissions.py)
+python correcciones/calificador.py --team G1  # un solo equipo
+```
+Toma de cada clon local el último commit anterior al cierre (`correcciones/tarea-1/tarea.json`),
+ejecuta cada `perceptron_X.py` en un sandbox (WSL + bubblewrap, sin red) contra los cuatro
+casos de la rúbrica y escribe en `correcciones/resultados/<trimestre>/tarea-1/`:
+`notas.csv` (para el acta) e `informe.md` (explicación por archivo, con las gráficas en `evidence/`).
+La columna **Revisar** marca los casos donde el criterio es visual y conviene abrir la gráfica.
+
+- Requisito único en Ubuntu/WSL: `sudo apt install bubblewrap python3-matplotlib`.
+- Los casos "no vistos" viven en `correcciones/tarea-1/casos/` (nunca en `repo-template/`).
+- Entregas tardías aceptadas: `correcciones/tarea-1/entregas-tardias.csv` (commit exacto + descuento).
+- Decisiones de la preparadora que el corrector automático no puede tomar (ruta absoluta de
+  Windows, menú sin CSV propio): `correcciones/tarea-1/decisiones-docente.json`, atadas a un commit
+  exacto; si el estudiante pushea otro commit, la decisión caduca y el corrector avisa.
+- Los tests del corrector corren con `task test` (`pytest correcciones/tests`).
+
 ### Descargar informe
 ```bash
 gh run download <run-id> --name results-all

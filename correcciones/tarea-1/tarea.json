@@ -1,0 +1,13 @@
+{
+  "name": "Tarea 1: perceptrón",
+  "cutoff": "2026-09-28T00:00:00-04:00",
+  "minimum_grade": 1,
+  "maximum_grade": 20,
+  "excluded_teams": ["grupo-control"],
+  "criteria": [
+    {"key": "given_separable", "description": "Separa el ejemplo dado", "correct": 25, "incorrect": 15, "no_result": 0},
+    {"key": "given_non_separable", "description": "No separa el ejemplo dado", "correct": 25, "incorrect": 15, "no_result": 0},
+    {"key": "hidden_separable", "description": "Separa el ejemplo no visto", "correct": 25, "incorrect": 15, "no_result": 0},
+    {"key": "hidden_non_separable", "description": "No separa el ejemplo no visto", "correct": 25, "incorrect": 15, "no_result": 0}
+  ]
+}

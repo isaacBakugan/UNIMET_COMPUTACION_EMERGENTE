@@ -2,3 +2,6 @@
 # no deben quedar anidados dentro del repo central)
 .repos-trimestre-*/
 .env
+# Resultados de corrección (notas de estudiantes, fuentes exportadas y gráficas): se regeneran con calificador.py
+correcciones/resultados/
+__pycache__/

@@ -1,0 +1,50 @@
+[
+  {
+    "team": "Aris",
+    "file": "perceptron_3.py",
+    "commit": "135c85710594272be34710b07749133021f934a5",
+    "reason": "El código contiene una ruta absoluta de Windows (C:\\Users\\diego\\...) y falla con FileNotFoundError fuera de su equipo. La preparadora lo evaluó neutralizando esa ruta solo en memoria, con escalón, w1=1, w2=-1 y sesgo=-0.2.",
+    "cases": {
+      "given_separable": {
+        "outcome": "incorrect",
+        "explanation": "Con escalón, w1=1, w2=-1 y sesgo=-0.2, la gráfica muestra 168/200 coincidencias. Los 32 valores esperados decimales aparecen como errores porque la salida del escalón solo puede ser 0 o 1."
+      },
+      "given_non_separable": {
+        "outcome": "correct",
+        "explanation": "La gráfica conserva 92 puntos no coincidentes y 108 coincidentes de 200; no presenta una separación lineal completa de este conjunto."
+      },
+      "hidden_separable": {
+        "outcome": "correct",
+        "explanation": "La gráfica de comparación muestra 10/10 puntos coincidentes y 0 errores; las dos clases quedan separadas."
+      },
+      "hidden_non_separable": {
+        "outcome": "correct",
+        "explanation": "La gráfica conserva 4 puntos no coincidentes y 4 coincidentes de 8; no presenta una separación lineal completa de este conjunto."
+      }
+    }
+  },
+  {
+    "team": "areperos",
+    "file": "perceptron_2.py",
+    "commit": "e803571788c5f682b2d476e2b7654806cf5499f5",
+    "reason": "El menú del programa tiene otro orden y solo ofrece los dos CSV incorporados: no permite cargar un ejemplo no visto, así que el corrector genérico (que responde la opción de menú por posición) no aplica.",
+    "cases": {
+      "given_separable": {
+        "outcome": "incorrect",
+        "explanation": "La gráfica de valores esperados omite los 32 puntos con etiquetas decimales (solo dibuja 168/200); la comparación visual del ejemplo queda incompleta."
+      },
+      "given_non_separable": {
+        "outcome": "correct",
+        "explanation": "La gráfica conserva 93 puntos no coincidentes y 107 coincidentes de 200; no presenta una separación lineal completa de este conjunto."
+      },
+      "hidden_separable": {
+        "outcome": "incorrect",
+        "explanation": "Las funciones pueden leer un CSV distinto y calcular la clasificación con dos entradas, pero el menú solo ofrece los dos archivos dados; el usuario no puede ejecutar este ejemplo no visto desde el programa entregado."
+      },
+      "hidden_non_separable": {
+        "outcome": "incorrect",
+        "explanation": "Las funciones pueden leer un CSV distinto y calcular la clasificación con dos entradas, pero el menú solo ofrece los dos archivos dados; el usuario no puede ejecutar este ejemplo no visto desde el programa entregado."
+      }
+    }
+  }
+]
