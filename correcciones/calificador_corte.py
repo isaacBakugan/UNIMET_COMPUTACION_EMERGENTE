@@ -62,10 +62,10 @@ class TeamRow:
 
 
 def student_grade(row: TeamRow, config: CorteConfig, is_late: bool) -> tuple[int | None, bool]:
-    """Individual grade and whether the late penalty applied.
+    """Student grade and whether the late penalty applied.
 
-    A late student keeps the better of (cutoff version) and (latest version minus penalty), so a late
-    commit never hurts anyone; students without late commits of their own always get the cutoff version.
+    A late team keeps the better of (cutoff version) and (latest version minus penalty), so a late
+    commit never hurts the team.
     """
     base = row.cutoff_grade(config)
     if base is None:
@@ -144,22 +144,20 @@ def load_delivery_list(path: Path) -> list[ListEntry]:
 
 def student_rows(entries: list[ListEntry], rows: list[TeamRow], config: CorteConfig,
                  authors: dict[str, tuple[str, str]], warnings: list[str]) -> list[dict]:
-    """One row per student in alphabetical delivery order, with the individual late rule applied."""
+    """One row per student in alphabetical delivery order, with the team late rule applied."""
     by_team = {normalize(row.team): row for row in rows}
     emails_of: dict[tuple[str, str], set[str]] = {}
     for email, (last, first) in authors.items():
         emails_of.setdefault((normalize(last), normalize(first)), set()).add(email)
     for row in rows:
         for email in sorted(row.late_emails - set(authors)):
-            warnings.append(f"{row.team}: hay commits tardíos de {email}, que no está en autores.csv; no se pudo "
-                            "atribuirlos a ningún estudiante (nadie fue penalizado por ellos).")
+            warnings.append(f"{row.team}: hay commits tardíos de {email}, que no está en autores.csv.")
     result = []
     for entry in sorted(entries, key=sort_key):
         team_row = by_team.get(normalize(entry.team))
         if team_row is None:
             continue   # team not graded in this run (--team filter)
-        own_emails = emails_of.get((normalize(entry.last_name), normalize(entry.first_name)), set())
-        is_late = bool(own_emails & team_row.late_emails)
+        is_late = bool(team_row.late_commits)
         grade, penalized = student_grade(team_row, config, is_late)
         observations = []
         if grade is None:
@@ -167,7 +165,7 @@ def student_rows(entries: list[ListEntry], rows: list[TeamRow], config: CorteCon
         elif penalized:
             observations.append(f"Entrega tardía: -{config.late_penalty_points} puntos")
         elif is_late:
-            observations.append("Commits tardíos propios sin efecto: la versión al cierre es igual o mejor")
+            observations.append("Commits tardíos sin efecto: la versión al cierre es igual o mejor")
         result.append({"Apellido": entry.last_name, "Nombre": entry.first_name, "Equipo": entry.team,
                        "Nota": "" if grade is None else grade, "Observación": "; ".join(observations)})
     listed = {normalize(entry.team) for entry in entries}
@@ -207,9 +205,8 @@ def write_outputs(rows: list[TeamRow], students: list[dict], config: CorteConfig
     lines = [f"# Corrección automática: {config.name} ({term})", ""]
     if preliminary:
         lines += ["> **PRELIMINAR:** el cierre aún no ha ocurrido; se evaluó el último commit actual de cada equipo.", ""]
-    lines += [f"Cierre: {config.cutoff}. El entregable (`{config.deliverable}`) es del equipo, pero la entrega tardía es "
-              f"**individual**: cada estudiante recibe la nota de la versión del equipo al cierre; quien hizo commits "
-              f"posteriores al cierre (según `autores.csv`) recibe la mejor entre esa nota y la de la versión final con "
+    lines += [f"Cierre: {config.cutoff}. El entregable (`{config.deliverable}`) es del equipo, y la entrega tardía es "
+              f"**grupal**: todo el equipo recibe la mejor nota entre la versión al cierre y la versión final con "
               f"{config.late_penalty_points} puntos menos. Las notas salen de ejecutar las mismas pruebas unitarias que corren los "
               "estudiantes. " + f"La nota máxima es {config.maximum_grade}; puntos por criterio: "
               + ", ".join(f"{c.key} {c.points}" for c in config.criteria) + ", proporcionales a las pruebas que pasan.", "",
