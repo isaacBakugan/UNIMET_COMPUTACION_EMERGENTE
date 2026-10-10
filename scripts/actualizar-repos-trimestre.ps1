@@ -35,7 +35,13 @@ param(
     [string[]]$PreservedFiles = @("preguntas.json", "perceptron_1.py", "perceptron_2.py", "perceptron_3.py", "perceptron_multicapa_1.py", "perceptron_multicapa_2.py", "perceptron_multicapa_3.py", "pytorch_fashion_1.ipynb", "pytorch_fashion_2.ipynb", "pytorch_fashion_3.ipynb", "algoritmo_genetico_1.py", "algoritmo_genetico_2.py", "algoritmo_genetico_3.py", "simcity.py"),
 
     # If passed, only prints the actions without running them
-    [switch]$DryRun
+    [switch]$DryRun,
+
+    # If a team rewrote its history (force push) the local clone diverges from origin. By default
+    # the repo is skipped untouched with a warning. With this switch the local commits are kept
+    # in a backup/diverged-<timestamp> branch and the clone is aligned to origin, so the sync
+    # can proceed on top of what the team currently has.
+    [switch]$ResolveDivergence
 )
 
 $ErrorActionPreference = "Stop"
@@ -52,6 +58,52 @@ function Invoke-Git {
         if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') failed (exit $LASTEXITCODE)" }
     }
     finally { $ErrorActionPreference = $previous }
+}
+
+# Brings the current clone (cwd) up to date with origin WITHOUT ever creating a merge commit.
+# `git pull` on a diverged branch (a team force-pushed) leaves the clone half-merged with
+# conflicts in the students' files, so: fetch, compare, and act per case.
+#   behind 0              -> nothing to integrate (maybe ahead: pushed later by the main flow)
+#   ahead 0, behind N     -> fast-forward
+#   ahead M, behind N     -> diverged: throw (repo skipped, clone untouched) unless
+#                            -ResolveDivergence, which backs up the local commits first
+function Sync-LocalClone {
+    Invoke-Git fetch
+
+    # git config is silent on stderr when unset (redirecting a native command's stderr would
+    # raise a terminating error under $ErrorActionPreference = "Stop" in PS 5.1)
+    $branch = git branch --show-current
+    if (-not $branch -or -not (git config --get "branch.$branch.remote")) {
+        throw "current branch has no upstream configured; cannot compare against origin"
+    }
+
+    $counts = (git rev-list --left-right --count "HEAD...@{u}") -split '\s+'
+    $ahead = [int]$counts[0]
+    $behind = [int]$counts[1]
+
+    if ($behind -eq 0) { return }
+    if ($ahead -eq 0) {
+        Invoke-Git merge --ff-only "@{u}"
+        return
+    }
+
+    # Local-only commits are ours (template syncs) unless the team's own commits were pulled
+    # earlier and then dropped by the force push: those are the ones worth surfacing.
+    $localOnly = @(git log --format="%h %an: %s" "@{u}..HEAD")
+    $studentWork = @($localOnly | Where-Object { $_ -notmatch "Se actualiza el template del repo de grupo" })
+    $summary = "diverged from origin (local ahead $ahead, behind $behind): the team rewrote its history (force push)."
+    if ($studentWork.Count -gt 0) {
+        $summary += "`n  Commits that exist only locally and are NOT template syncs (dropped by the force push):`n    " + ($studentWork -join "`n    ")
+    }
+
+    if (-not $ResolveDivergence) {
+        throw "$summary`n  Skipped, clone untouched. Review the commits and re-run with -ResolveDivergence to back them up and align to origin."
+    }
+
+    $backupBranch = "backup/diverged-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+    Invoke-Git branch $backupBranch HEAD
+    Invoke-Git reset --hard "@{u}"
+    Write-Warning "  $summary`n  Local commits kept in branch '$backupBranch'; clone aligned to origin."
 }
 
 $statusPath = Join-Path $InputsPath "estado.json"
@@ -97,7 +149,7 @@ foreach ($repo in $repos) {
         }
         else {
             Push-Location $localPath
-            try { Invoke-Git pull } finally { Pop-Location }
+            try { Sync-LocalClone } finally { Pop-Location }
         }
 
         foreach ($file in $templateFiles) {
