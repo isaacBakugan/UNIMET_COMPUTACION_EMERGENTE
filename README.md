@@ -253,8 +253,9 @@ La columna **Revisar** marca los casos donde el criterio es visual y conviene ab
 - Los tests del corrector corren con `task test` (`pytest correcciones/tests`).
 
 ### Corregir la Tarea 2 (perceptrón multicapa)
-**Pendiente de implementar por la preparadora.** La configuración, la rúbrica y las directrices (entrega tardía individual,
-orden alfabético, reporte en consola + `notas-sheets.csv` para copiar a Sheets) están en
+`python correcciones/calificador_tarea_2.py --update` refresca las entregas y regenera `notas.csv`,
+`notas-sheets.csv` e `informe.md`. Ejecuta carga y entrenamiento con los cuatro casos en el sandbox;
+las notas son propuestas y los casos pendientes se marcan para revisión. Uso y configuración en
 [correcciones/tarea-2/README.md](correcciones/tarea-2/README.md).
 
 ### Corregir el corte de preguntas 1 y obtener las notas

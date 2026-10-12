@@ -37,11 +37,11 @@ def to_sandbox_path(path: Path) -> str:
     return "/mnt/" + resolved.drive[0].lower() + str(resolved)[2:].replace("\\", "/")
 
 
-def check_runtime() -> None:
+def check_runtime(modules: tuple[str, ...] = ("matplotlib",)) -> None:
     """Fail early with an actionable message if the sandbox is not usable."""
     probes = [
         (["bwrap", "--version"], "bubblewrap"),
-        (["/usr/bin/python3", "-c", "import matplotlib"], "python3-matplotlib"),
+        (["/usr/bin/python3", "-c", "import " + ", ".join(modules)], ", ".join(modules)),
     ]
     for command, package in probes:
         try:
@@ -52,21 +52,27 @@ def check_runtime() -> None:
             ) from exc
 
 
-def _bwrap_command(source_dir: Path, filename: str, out_dir: Path, csv_path: str, case: str, menu_choice: str) -> list[str]:
+def isolated_command(source_dir: Path, out_dir: Path, data_dir: Path, runner: Path,
+                     arguments: list[str]) -> list[str]:
     return [
         *WSL_PREFIX, "bwrap", "--unshare-all", "--die-with-parent",
         "--ro-bind", "/usr", "/usr", "--ro-bind", "/lib", "/lib",
         "--ro-bind", "/lib64", "/lib64", "--ro-bind", "/bin", "/bin",
         "--ro-bind", "/etc", "/etc", "--dev", "/dev", "--proc", "/proc",
         "--tmpfs", "/tmp", "--ro-bind", to_sandbox_path(source_dir), "/src",
-        "--ro-bind", to_sandbox_path(CASES_DIR), "/data",
-        "--dir", "/runner", "--ro-bind", to_sandbox_path(RUNNER), "/runner/sandbox_runner.py",
+        "--ro-bind", to_sandbox_path(data_dir), "/data",
+        "--dir", "/runner", "--ro-bind", to_sandbox_path(runner), "/runner/runner.py",
         "--bind", to_sandbox_path(out_dir), "/out",
         "--setenv", "HOME", "/tmp", "--setenv", "MPLCONFIGDIR", "/tmp/mpl",
         "--setenv", "MPLBACKEND", "Agg", "--setenv", "PYTHONNOUSERSITE", "1",
-        "--chdir", "/src", "/usr/bin/python3", "/runner/sandbox_runner.py",
-        "/src/" + filename, csv_path, case, menu_choice,
+        "--setenv", "OPENBLAS_NUM_THREADS", "1",
+        "--chdir", "/src", "/usr/bin/python3", "/runner/runner.py", *arguments,
     ]
+
+
+def _bwrap_command(source_dir: Path, filename: str, out_dir: Path, csv_path: str, case: str, menu_choice: str) -> list[str]:
+    return isolated_command(source_dir, out_dir, CASES_DIR, RUNNER,
+                            ["/src/" + filename, csv_path, case, menu_choice])
 
 
 def run_case(source_dir: Path, filename: str, case: str, out_dir: Path, timeout: int = 40) -> CaseEvidence:

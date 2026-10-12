@@ -1,92 +1,122 @@
 # Corrección de la Tarea 2 — Perceptrón multicapa
 
-Espacio para la preparadora. Enunciado y rúbrica para los estudiantes:
-[repo-template/tarea-2-codigo/README.md](../../repo-template/tarea-2-codigo/README.md).
-Esta carpeta trae la **configuración** y las **directrices**; el corrector, los casos
-ocultos y los tests los escribe la preparadora siguiendo lo que hay aquí.
+El comando del preparador es `python correcciones/calificador_tarea_2.py --update`, desde la raíz del repositorio central. Descarga o actualiza los clones con `git fetch`, lee la rama remota y regenera las notas y el análisis. No modifica los repositorios estudiantiles.
 
-## Qué hay ya en esta carpeta
+## Paso a paso
 
-| Archivo | Para qué |
+1. `git switch develop` y `git pull origin develop` antes de trabajar.
+2. En Ubuntu/WSL, instalar una vez: `sudo apt install bubblewrap python3-matplotlib python3-numpy python3-pandas`.
+3. Revisar `tarea.json`: cierre **11 de octubre de 2026, 23:59:59, Caracas** (incluye el minuto de las 11:59 p. m.), confirmado por la preparadora. `--cutoff` permite otra fecha ISO con zona horaria. Antes del cierre el reporte se marca PRELIMINAR.
+4. Ejecutar desde la raíz:
+
+   ```powershell
+   python correcciones/calificador_tarea_2.py --update
+   # Opcional: un equipo, otra carpeta privada o un límite de ejecución mayor
+   python correcciones/calificador_tarea_2.py --team G1 --timeout 180
+   ```
+
+   Alternativas con taskipy: `task grade-tarea-2` y `task grade-tarea-2-update`.
+5. Revisar `needs_review` en `notas.csv` y el detalle de `informe.md`. Las matrices y las gráficas son evidencia capturada del programa: las notas automáticas son **propuestas**, sujetas a la interpretación docente de «clasifica correctamente». En particular, el corrector propone 25 solo cuando toda la matriz de prueba es diagonal; propone 15 si hay clasificaciones erróneas. No inventa un umbral porcentual. Si el docente considera correcta una clasificación con errores, debe registrar su decisión.
+6. Para confirmar o corregir un criterio, registrar una entrada en `decisiones-docente.json` con `team`, `file`, `commit` exacto, `reason` y `cases` (ver ejemplo abajo). Volver a ejecutar el mismo comando. La decisión caduca al cambiar el commit y aparece una advertencia.
+7. Para otra actualización estudiantil, repetir `python correcciones/calificador_tarea_2.py --update`. Las versiones al cierre y tardías se vuelven a evaluar; una nota tardía nunca reduce la nota al cierre.
+
+## Resultados privados
+
+Se guardan en `correcciones/resultados/<trimestre>/tarea-2/`, ignorado por Git:
+
+| Archivo | Contenido |
 |---|---|
-| `tarea.json` | Rúbrica (4 criterios × 25/15/0), escala 1–20, descuento por tardía (2) y cierre (`cutoff`) |
-| `alumnos.csv` | Lista de apoyo `team,file,student_name,national_id`; se llena solo si la cabecera del archivo no trae el nombre |
-| `entregas-tardias.csv` | Solo excepciones: commit exacto + descuento distinto de 2 |
-| `decisiones-docente.json` | Decisiones manuales atadas a un commit exacto (empieza vacío) |
+| `notas.csv` | Nota propuesta por archivo, commit, cuatro criterios, descuento, revisión y análisis individual |
+| `notas-sheets.csv` | Apellido, Nombre, Equipo, Nota, Observación; orden alfabético para Sheets |
+| `informe.md` | Resumen, advertencias y explicación de los cuatro criterios por estudiante, con gráficas |
+| `evidence/` | Una carpeta por estudiante, commit y caso: consola, errores, traza, resultado y gráficas |
+| `sources/` | Exportación inmutable del commit evaluado mediante `git archive` |
+| `inputs/` | Copia de los datasets oficiales y los casos de corrección utilizados |
+| `ejecucion.json` | Cierre, semilla, versiones, hashes de configuración/casos/corrector y estado de revisión |
 
-## Pendiente antes de corregir
+Una ejecución filtrada con `--team` reemplaza los CSV de esa carpeta con el subconjunto. Usar `--output correcciones/resultados/<trimestre>/tarea-2-equipo` para conservar aparte un reporte parcial.
 
-- [ ] **Fijar `cutoff` en `tarea.json`.** Hoy tiene `2099-12-31T23:59:00-04:00` como centinela: con él todo cuenta
-  como "a tiempo". Debe llevar zona horaria (`-04:00`).
-- [ ] Definir los **nombres de archivo de las dos redes entregadas** (CSV de perceptrón multicapa, formato del
-  enunciado) y ponerlos en el README del template.
-- [ ] Escribir el **corrector** (`correcciones/calificador_tarea_2.py` + task `grade-tarea-2` en `pyproject.toml`).
-- [ ] Escribir los **casos ocultos** en `correcciones/tarea-2/casos/` (nunca en `repo-template/`): un ejemplo no visto
-  de 2D/2 clases y uno de 3D/4 clases.
-- [ ] Escribir los **tests** en `correcciones/tests/` (ver "Gates" abajo).
+Nunca subir notas, informes, evidencia ni fuentes de estudiantes al repositorio público. Se comparten con el profesor por un canal privado.
 
-## Qué se corrige (los 4 criterios de `tarea.json`)
+## Redes y menús de los estudiantes
 
-1. `given_network_2d_2class`: la red entregada para el ejemplo de 2D/2 clases se **carga** con el programa del
-   estudiante y clasifica `assets/2-d_2-class_*.csv`.
-2. `given_network_3d_4class`: ídem para 3D/4 clases con `assets/3-d_4-class_*.csv`.
-3. `hidden_training_2d_2class`: los **hiperparámetros** de esa red (filas `u,v,L,b,e` del CSV) entrenan, desde cero,
-   una red que clasifica un ejemplo **no visto** de 2D/2 clases.
-4. `hidden_training_3d_4class`: ídem para 3D/4 clases.
+`redes-entregadas.csv` relaciona cada programa con sus **dos redes individuales**. Las asociaciones actuales proceden de los nombres de carpeta/archivo, las cabeceras del código y el historial de creación de los CSV. Esta tabla describe dónde está el entregable; no asigna puntajes. Se mantiene al actualizar pesos o código; solo cambiarla si cambia la ruta o pertenencia del archivo. No se presta una red de otro integrante a quien no entregó la suya.
 
-Escala por criterio: correcto 25 · incorrecto 15 · no hace nada 0. Nota = puntos proporcionales sobre 20, **mínimo 1**.
-Las claves de `criteria` son libres (`load_rubric` solo exige claves únicas): si cambias una, cámbiala también en el
-corrector y en `decisiones-docente.json`.
+Cuando no hay asociación explícita se buscan `red_2d_2clases_N.csv` y `red_3d_4clases_N.csv` junto a `perceptron_multicapa_N.py`. Esta es una convención del corrector para nuevas entregas; no reemplaza retroactivamente los nombres que ya usaron los estudiantes. Una ruta ausente sale con 0 propuesto y **Revisar**; verificar primero si falta el entregable o su asociación.
 
-## Directrices que ya rigen (misma mecánica que la Tarea 1)
+Por defecto se usan las opciones del enunciado: crear=1, cargar=2; entrenar=1, probar=2, guardar=3, salir=4. La creación pregunta u,v,L,b, y el entrenamiento archivo y épocas. Menús distintos se documentan en `perfiles-consola.json`, atados al commit exacto y con motivo. Ya se registraron los menús actuales de Mario (selección «otro archivo») y Diego Mendez (confirmación de salida). Un perfil obsoleto avisa y no se aplica; el corrector intenta el menú estándar y marca para revisión si no obtiene evidencia.
 
-### Entrega tardía: individual, −2 puntos
+Ejemplo de un perfil (usar un SHA real):
 
-- Cada archivo `perceptron_multicapa_N.py` es de **un** estudiante, así que la tardanza también.
-- Todos se evalúan sobre el **último commit anterior al cierre**.
-- Si hay commits posteriores al cierre (en `tarea-2-codigo/<archivo>`), se evalúa **además** el último commit con
-  `late_penalty_points` menos, y el estudiante recibe **la mejor** de las dos notas: un commit tardío nunca perjudica
-  a quien entregó a tiempo.
-- La entrega tardía **se evalúa igual**, no se anula; el aviso queda en las ADVERTENCIAS y en las notas del informe.
-- `entregas-tardias.csv` solo para excepciones. Nunca un `if team == ...` en el código.
+```json
+[
+  {
+    "team": "Equipo",
+    "file": "perceptron_multicapa_1.py",
+    "commit": "SHA_COMPLETO",
+    "reason": "El menú pide elegir Otro archivo antes de recibir la ruta.",
+    "cases": {
+      "given_network_2d_2class": {
+        "answers": ["2", "{network}", "2", "5", "{test}", "4"]
+      },
+      "hidden_training_2d_2class": {
+        "answers": ["1", "{u}", "{v}", "{L}", "{b}", "1", "5", "{train}", "{e}", "2", "5", "{test}", "4"]
+      }
+    }
+  }
+]
+```
 
-### Decisiones docentes
+Los perfiles aceptan `network` como ruta relativa opcional. Nunca contienen código ejecutable ni reescriben el programa estudiantil. La traza registra todas las respuestas.
 
-- Lo que el corrector automático no puede decidir (ruta absoluta de Windows, menú distinto, formato de CSV de red
-  ambiguo...) va en `decisiones-docente.json`, **atado a `team + file + commit`**. Con `reason` obligatorio y, por
-  criterio, `outcome` (`correct` / `incorrect` / `no_result`) + `explanation`.
-- Si el estudiante pushea otro commit, la decisión **caduca** y el corrector avisa ("Decisión docente obsoleta").
+## Los cuatro criterios
 
-### Reporte
+- `given_network_2d_2class`: cargar la red entregada y probarla sobre el **test oficial** de 2D/2 clases.
+- `given_network_3d_4class`: lo mismo con el test oficial de 3D/4 clases.
+- `hidden_training_2d_2class`: extraer u,v,L,b,e de su red, crear una red nueva, entrenarla **e épocas** con el train no visto y probarla sobre el test no visto separado.
+- `hidden_training_3d_4class`: lo mismo con 3D/4 clases.
 
-Todo en **orden alfabético por apellido**, la fuente es `trimestre-actual/lista-entrega.csv`. Nunca por equipo ni por
-archivo. Salidas en `correcciones/resultados/<trimestre>/tarea-2/` (ignorado por git):
+Casos en `casos/`: 2D con relación XOR de signos y 3D con cuatro regiones según x1+x3 y x2-x3. Las filas de train y test no se repiten. Nunca se sincronizan hacia los repos estudiantiles; al estar en un central público son casos reservados para la corrección, **no secretos**. Se recomienda sustituirlos antes de una nueva cohorte si se necesita una evaluación no conocida.
 
-| Salida | Contenido |
-|---|---|
-| **Consola** | Tabla `# · Apellido, nombre · Equipo · Archivo · C1..C4 · Rúbrica · Desc · Nota · Revisar`, `*` = asignación provisional, y al final las `ADVERTENCIA:` |
-| `notas-sheets.csv` | `Apellido,Nombre,Equipo,Nota,Observación`: **la columna `Nota` se pega tal cual en Google Sheets**, alineada con la lista de la planilla |
-| `notas.csv` | Detalle por archivo (commit evaluado, puntos por criterio, descuento, `needs_review`, comentario) |
-| `informe.md` | Tabla resumen + advertencias + detalle por archivo con la explicación de cada criterio |
+Escala original: **25 / 15 / 0**, proporcional sobre 20, mínimo 1. Se reutiliza `rubrica.py`. El criterio automático exige una matriz de prueba no normalizada, con tamaño y soporte de clases iguales a los del CSV oficial. Se acepta orientación por filas o columnas. Una matriz incompleta, un timeout, una ruta/menú incompatible o un error no permiten concluir que la clasificación sea incorrecta: se informa 0 **propuesto**, con revisión necesaria. Una plantilla vacía sí obtiene la mínima sin ejecución.
 
-- Un archivo se cruza con la lista por el nombre de su **cabecera** (`# Nombre del integrante:`), sin distinguir acentos
-  ni mayúsculas. Los que no traen nombre se asignan **por equipo** y salen marcados **provisional**
-  (`assignment = by_team`): confirmar a mano.
-- Si lo corres antes del cierre, el reporte debe salir marcado **PRELIMINAR**.
-- Reutiliza `lista.py` (cruce y orden), `entregas.py` (commit al cierre, `git archive`), `rubrica.py` (escala y nota) y
-  el sandbox de la Tarea 1 en vez de duplicarlos. Ojo: `entregas.py` hoy fija `ASSIGNMENT_DIR = "tarea-1-codigo"` y
-  `ALLOWED_IMPORTS = {"matplotlib"}`; para esta tarea hay que parametrizar la carpeta (`export_assignment` ya acepta
-  `folder`) y permitir `numpy`/`pandas`, y **prohibir** `torch`, `tensorflow` y afines.
+Se leen los hiperparámetros de CSV con encabezado inicial y, para las entregas existentes, de CSV con encabezado después de u,v,L,b,e. El archivo original se entrega al cargador del estudiante sin repararlo; no se deduce la función de activación ni se ejecuta un modelo sustituto. El reporte permite revisar las diferencias de formato sin agregar penalizaciones ajenas a los cuatro criterios.
 
-## Gates (los descubre por disco, sin registrar nada)
+## Tardanzas, nombres y decisiones docentes
 
-`correcciones/tests/test_calificador.py` ya recorre `correcciones/tarea-*/tarea.json`, por lo que esta carpeta queda
-sujeta a que `tarea.json`, `decisiones-docente.json`, `alumnos.csv` y `entregas-tardias.csv` carguen y tengan las
-columnas esperadas. Los tests nuevos de esta tarea (los escribe la preparadora) deben seguir lo que pide el repo:
+Se reutilizan `entregas.py`, `lista.py`, `rubrica.py` y la infraestructura bubblewrap de tarea 1. La selección usa la fecha del **commit**, no la hora del push (esta última requeriría el registro de recepción de GitHub).
 
-- Descubrir sujetos **por disco** y fallar si no encuentran ninguno.
-- Que la plantilla sin tocar (`perceptron_multicapa_N.py` vacío) saque la **nota mínima**, no "pase por vacuidad".
-- Que cada caso oculto exista en disco y tenga el encabezado esperado.
-- Verificar el gate **en rojo** antes de darlo por bueno (romper algo a propósito y comprobar que el mensaje nombra
-  el archivo culpable).
-- Correr con `task test` (`pytest repo-template/tests correcciones/tests`), que es la suite que bloquea el build.
+Cada archivo es individual. Un cambio posterior al cierre en el programa o su red asociada activa la evaluación del último commit remoto con **−2**. Se conserva `max(nota al cierre, nota tardía − 2)`. `entregas-tardias.csv` solo registra excepciones con SHA y descuento explícitos. Cada versión tiene evidencia separada; el reporte conserva cualquier revisión pendiente de las versiones comparadas.
+
+Los nombres vienen de la cabecera; también se reconocen comentarios con el nombre sin etiqueta cuando coinciden de forma única con la lista oficial del equipo. `alumnos.csv` completa cabeceras sin identidad. Se ordenan según `trimestre-actual/lista-entrega.csv`. Archivos sin nombre se asignan provisionalmente por equipo y deben confirmarse. No se agregaron cédulas de estudiantes a la configuración pública de esta tarea.
+
+Ejemplo de decisión:
+
+```json
+[
+  {
+    "team": "Equipo",
+    "file": "perceptron_multicapa_1.py",
+    "commit": "SHA_COMPLETO",
+    "reason": "Se revisaron código, matriz y gráficas.",
+    "cases": {
+      "given_network_2d_2class": {
+        "outcome": "correct",
+        "explanation": "La revisión docente confirma la clasificación del ejemplo."
+      }
+    }
+  }
+]
+```
+
+Outcomes válidos: `correct`, `incorrect`, `no_result`. Una decisión puede confirmar solo algunos criterios; los demás se ejecutan normalmente.
+
+## Verificación y entrega al repositorio
+
+```powershell
+python -m pytest repo-template/tests correcciones/tests
+```
+
+Los gates descubren plantillas y casos por disco y fallan si no hay sujetos. Incluyen datos mal formados (con el nombre del archivo en el error), mínima para plantilla, cobertura de matrices, fecha centinela y política de mejor versión. Se comprobó el gate de datasets en rojo mediante una mutación temporal y luego se restauró el caso.
+
+Trabajar en `develop`. Revisar `git status` y añadir archivos concretos; antes del commit, `git diff --cached --name-only` no debe mostrar resultados ni clones. Convención: `feat: Se agrega el corrector de la Tarea 2`. La publicación oficial requiere el flujo `develop → main` y revisión del profesor, conforme a `preparador.md`.

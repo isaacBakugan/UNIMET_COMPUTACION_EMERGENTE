@@ -90,6 +90,7 @@ python correcciones/calificador_corte.py --update
 
 # 2. Genera las notas
 python correcciones/calificador.py                       # Tarea 1: todos los estudiantes
+python correcciones/calificador_tarea_2.py --update       # Tarea 2: refrescar y corregir
 python correcciones/calificador.py --team G1             # un solo equipo
 python correcciones/calificador_corte.py                 # Corte de preguntas 1
 ```

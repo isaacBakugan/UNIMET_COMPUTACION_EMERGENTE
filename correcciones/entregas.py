@@ -37,13 +37,13 @@ def to_utc_iso(value: str) -> str:
 
 def commit_at_cutoff(repo: Path, cutoff: str, ref: str = "HEAD") -> str | None:
     """Last commit reachable from `ref` whose commit date is <= cutoff, or None."""
-    sha = git(repo, "rev-list", "-1", f"--before={to_utc_iso(cutoff)}", ref)
+    sha = git(repo, "rev-list", "-1", f"--before={git_cutoff(cutoff)}", ref)
     return sha or None
 
 
 def commits_after_cutoff(repo: Path, cutoff: str, ref: str = "HEAD", folder: str | None = None) -> list[str]:
     """ISO dates of the commits after the cutoff (optionally only those touching `folder`), newest first."""
-    args = ["log", f"--after={to_utc_iso(cutoff)}", "--format=%cI", ref]
+    args = ["log", f"--after={git_cutoff(cutoff, 1)}", "--format=%cI", ref]
     if folder:
         args += ["--", folder]
     return git(repo, *args).splitlines()
@@ -51,10 +51,16 @@ def commits_after_cutoff(repo: Path, cutoff: str, ref: str = "HEAD", folder: str
 
 def commits_after_cutoff_by_author(repo: Path, cutoff: str, ref: str = "HEAD", folder: str | None = None) -> list[tuple[str, str]]:
     """(ISO date, lowercase author email) of the commits after the cutoff touching `folder`, newest first."""
-    args = ["log", f"--after={to_utc_iso(cutoff)}", "--format=%cI|%ae", ref]
+    args = ["log", f"--after={git_cutoff(cutoff, 1)}", "--format=%cI|%ae", ref]
     if folder:
         args += ["--", folder]
     return [(date, email.lower()) for date, email in (line.split("|", 1) for line in git(repo, *args).splitlines())]
+
+
+def git_cutoff(value: str, offset: int = 0) -> str:
+    """Use an epoch date: Git's ISO parser misreads sentinel dates beyond year 2099."""
+    to_utc_iso(value)
+    return "@" + str(int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()) + offset)
 
 
 def remote_ref(repo: Path) -> str:
@@ -91,7 +97,7 @@ def student_identity(source: str) -> tuple[str, str]:
     """Name and ID read from the header comments of the file ('' when absent)."""
     name = identity_number = ""
     for line in source.splitlines()[:25]:
-        match = re.match(r"\s*#\s*nombre(?: del integrante)?\s*:\s*(.+)", line, re.I)
+        match = re.match(r"\s*#\s*nombre(?: del integrante| del estudiante)?\s*:\s*(.+)", line, re.I)
         if match and match.group(1).strip():
             name = match.group(1).strip()
         match = re.match(r"\s*#\s*c[eé]dula(?: del integrante)?\s*:\s*(.+)", line, re.I)
@@ -104,7 +110,7 @@ def student_identity(source: str) -> tuple[str, str]:
     return name, identity_number
 
 
-def static_review(source: str) -> dict:
+def static_review(source: str, allowed_imports: set[str] | None = None) -> dict:
     """Syntax / empty-template / forbidden-imports check. Never executes the code."""
     review = {"syntax_ok": True, "empty": False, "forbidden_imports": []}
     try:
@@ -120,5 +126,5 @@ def static_review(source: str) -> dict:
             forbidden.update(alias.name.split(".")[0] for alias in node.names)
         elif isinstance(node, ast.ImportFrom):
             forbidden.add((node.module or "relative import").split(".")[0])
-    review["forbidden_imports"] = sorted(forbidden - ALLOWED_IMPORTS)
+    review["forbidden_imports"] = sorted(forbidden - (ALLOWED_IMPORTS if allowed_imports is None else allowed_imports))
     return review

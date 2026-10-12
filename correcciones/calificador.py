@@ -59,8 +59,11 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(file))
 
 
-def load_overrides(path: Path) -> list[dict]:
+def load_overrides(path: Path, case_keys: tuple[str, ...] | None = None) -> list[dict]:
     """Teacher decisions pinned to an exact (team, file, commit); validated on load."""
+    if case_keys is None:
+        config = path.parent / "tarea.json"
+        case_keys = tuple(load_rubric(config).criteria) if config.exists() else CASE_KEYS
     overrides = json.loads(path.read_text(encoding="utf-8-sig"))
     seen = set()
     for item in overrides:
@@ -71,7 +74,7 @@ def load_overrides(path: Path) -> list[dict]:
         if not item.get("reason", "").strip():
             raise ValueError(f"Teacher decision without reason: {key}")
         for case, decision in item["cases"].items():
-            if case not in CASE_KEYS or decision["outcome"] not in ("correct", "incorrect", "no_result") \
+            if case not in case_keys or decision["outcome"] not in ("correct", "incorrect", "no_result") \
                     or not decision.get("explanation", "").strip():
                 raise ValueError(f"Invalid teacher decision {key} / {case}")
     return overrides
@@ -159,7 +162,7 @@ def collect_submissions(teams: list[tuple[str, str]], clones: Path, rubric: Rubr
 
 
 def grade_of(submission: Submission, rubric: Rubric) -> int:
-    _, rubric_value = rubric_grade(rubric, {case: submission.cases[case].outcome for case in CASE_KEYS})
+    _, rubric_value = rubric_grade(rubric, {case: submission.cases[case].outcome for case in rubric.criteria})
     return final_grade(rubric, rubric_value, submission.penalty)
 
 
@@ -286,27 +289,29 @@ def finalize_unrunnable(submissions: list[Submission]) -> None:
 
 
 def build_rows(submissions: list[Submission], rubric: Rubric) -> list[dict]:
+    case_keys = tuple(rubric.criteria)
     rows = []
     for s in submissions:
-        outcomes = {case: s.cases[case].outcome for case in CASE_KEYS}
+        outcomes = {case: s.cases[case].outcome for case in case_keys}
         points, rubric_value = rubric_grade(rubric, outcomes)
         row = {
             "last_name": s.last_name, "first_name": s.first_name, "assignment": s.assignment,
             "team": s.team, "file": s.file, "student_name": s.student_name, "national_id": s.national_id,
             "commit": s.commit, "commit_date": s.commit_date, "status": s.status,
-            **{case: rubric.points(case, outcomes[case]) for case in CASE_KEYS},
+            **{case: rubric.points(case, outcomes[case]) for case in case_keys},
             "rubric_points": points, "rubric_grade": rubric_value, "penalty_points": s.penalty,
             "final_grade": final_grade(rubric, rubric_value, s.penalty),
-            "needs_review": ", ".join(case for case in CASE_KEYS if s.cases[case].needs_review),
+            "needs_review": ", ".join(case for case in case_keys if s.cases[case].needs_review),
             "comment": " ".join(f"{rubric.description(case)} ({rubric.points(case, outcomes[case])}/{rubric.criteria[case]['correct']}): "
-                                f"{s.cases[case].explanation}" for case in CASE_KEYS) + (" " + " ".join(s.notes) if s.notes else ""),
+                                f"{s.cases[case].explanation}" for case in case_keys) + (" " + " ".join(s.notes) if s.notes else ""),
         }
         rows.append(row)
     return rows
 
 
 def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubric, out_dir: Path,
-                  term: str, warnings: list[str]) -> None:
+                  term: str, warnings: list[str], preliminary: bool = False) -> None:
+    case_keys = tuple(rubric.criteria)
     out_dir.mkdir(parents=True, exist_ok=True)
     with (out_dir / "notas.csv").open("w", newline="", encoding="utf-8-sig") as file:
         writer = csv.DictWriter(file, fieldnames=list(rows[0]))
@@ -320,11 +325,16 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
         for row in rows:
             observation = {BY_TEAM: "Provisional: asignado por equipo",
                            UNASSIGNED: "Sin entrada en la lista de entrega"}.get(row["assignment"], "")
+            if row["needs_review"]:
+                observation += "; Revisar: " + row["needs_review"]
+            if preliminary:
+                observation += "; PRELIMINAR"
             writer.writerow([row["last_name"], row["first_name"], row["team"], row["final_grade"], observation])
 
-    lines = [f"# Corrección automática: {rubric.name} ({term})", "",
+    review_label = "PROPUESTA — " if any(row["needs_review"] for row in rows) else ""
+    lines = [f"# {'PRELIMINAR — ' if preliminary else review_label}Corrección automática: {rubric.name} ({term})", "",
              f"Cierre: {rubric.cutoff}. Cada archivo usa el último commit anterior al cierre, salvo las "
-             "entregas tardías aceptadas expresamente. Los puntajes de la rúbrica salen de ejecutar cada "
+             "versiones tardías, evaluadas con descuento conservando la mejor nota. Los puntajes de la rúbrica salen de ejecutar cada "
              "programa en un sandbox sin red contra los cuatro casos; la columna **Revisar** señala los "
              "casos donde conviene mirar la gráfica (carpeta `evidence/`) porque el criterio es visual.", "",
              f"Escala: nota por rúbrica proporcional sobre {rubric.maximum_grade}, mínimo {rubric.minimum_grade}; "
@@ -333,7 +343,7 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
              "|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---|"]
     for number, row in enumerate(rows, 1):
         who = display_name(row) + (" *(provisional)*" if row["assignment"] == BY_TEAM else "")
-        lines.append(f"| {number} | {who} | {row['team']}/{row['file']} | " + " | ".join(str(row[case]) for case in CASE_KEYS)
+        lines.append(f"| {number} | {who} | {row['team']}/{row['file']} | " + " | ".join(str(row[case]) for case in case_keys)
                      + f" | {row['rubric_grade']} | {row['penalty_points']} | **{row['final_grade']}** | {row['needs_review'] or '-'} |")
     if warnings:
         lines += ["", "## Advertencias", ""] + [f"- {text}" for text in warnings]
@@ -342,14 +352,15 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
         who = display_name(row)
         lines += [f"### {who} — {row['team']}/{row['file']} — {row['final_grade']}/{rubric.maximum_grade}", "",
                   f"Commit evaluado: `{row['commit'] or 'ninguno'}` ({row['commit_date'] or 'sin fecha'}). Estado: {s.status}.", ""]
-        for case in CASE_KEYS:
+        for case in case_keys:
             result = s.cases[case]
             tag = " (decisión docente)" if result.source == "teacher_decision" else ""
             graph = ""
-            figure = out_dir / "evidence" / s.team / s.file.removesuffix(".py") / case
+            evidence_base = getattr(s, "evidence_path", f"evidence/{s.team}/{s.file.removesuffix('.py')}")
+            figure = out_dir / evidence_base / case
             pngs = sorted(figure.glob("grafico_*.png")) if figure.exists() else []
             if pngs:
-                graph = f" [Gráfica](evidence/{s.team}/{s.file.removesuffix('.py')}/{case}/{pngs[-1].name})"
+                graph = f" [Gráfica]({evidence_base}/{case}/{pngs[-1].name})"
             lines.append(f"- **{rubric.description(case)}: {row[case]}/{rubric.criteria[case]['correct']}{tag}.** {result.explanation}{graph}")
         if s.notes:
             lines += ["", *[f"> {note}" for note in s.notes]]
@@ -364,12 +375,12 @@ def display_name(row: dict) -> str:
     return row["student_name"] or "Sin nombre"
 
 
-def print_summary(rows: list[dict], out_dir: Path) -> None:
+def print_summary(rows: list[dict], out_dir: Path, case_keys: tuple[str, ...] = CASE_KEYS) -> None:
     print(f"\n{'#':>2} {'Apellido, nombre':<26} {'Equipo':<10} {'Archivo':<16} C1  C2  C3  C4  Rúb  Desc  Nota  Revisar")
     for number, row in enumerate(rows, 1):
         who = display_name(row) + (" *" if row["assignment"] == BY_TEAM else "")
         print(f"{number:>2} {who[:25]:<26} {row['team']:<10} {row['file']:<16} "
-              + "  ".join(f"{row[case]:>2}" for case in CASE_KEYS)
+              + "  ".join(f"{row[case]:>2}" for case in case_keys)
               + f"  {row['rubric_grade']:>3}  {row['penalty_points']:>4}  {row['final_grade']:>4}  {row['needs_review'] or '-'}")
     if any(row["assignment"] == BY_TEAM for row in rows):
         print("\n* asignación provisional por equipo (el archivo no trae nombre)")

@@ -1,0 +1,180 @@
+[
+  {
+    "team": "LUMON",
+    "file": "perceptron_multicapa_2.py",
+    "commit": "8c6c5d04cf4fce92236fcc5ad96d637ab59dcc97",
+    "reason": "Se revisó el menú: selección Otro archivo (5) de Mario y confirmación de salida sin guardar de Diego.",
+    "cases": {
+      "given_network_2d_2class": {
+        "answers": [
+          "2",
+          "{network}",
+          "2",
+          "5",
+          "{test}",
+          "4"
+        ]
+      },
+      "hidden_training_2d_2class": {
+        "answers": [
+          "1",
+          "{u}",
+          "{v}",
+          "{L}",
+          "{b}",
+          "1",
+          "5",
+          "{train}",
+          "{e}",
+          "2",
+          "5",
+          "{test}",
+          "4"
+        ]
+      },
+      "given_network_3d_4class": {
+        "answers": [
+          "2",
+          "{network}",
+          "2",
+          "5",
+          "{test}",
+          "4"
+        ]
+      },
+      "hidden_training_3d_4class": {
+        "answers": [
+          "1",
+          "{u}",
+          "{v}",
+          "{L}",
+          "{b}",
+          "1",
+          "5",
+          "{train}",
+          "{e}",
+          "2",
+          "5",
+          "{test}",
+          "4"
+        ]
+      }
+    }
+  },
+  {
+    "team": "LUMON",
+    "file": "perceptron_multicapa_3.py",
+    "commit": "8c6c5d04cf4fce92236fcc5ad96d637ab59dcc97",
+    "reason": "Se revisó el menú: selección Otro archivo (5) de Mario y confirmación de salida sin guardar de Diego.",
+    "cases": {
+      "given_network_2d_2class": {
+        "answers": [
+          "2",
+          "{network}",
+          "2",
+          "{test}",
+          "4"
+        ]
+      },
+      "hidden_training_2d_2class": {
+        "answers": [
+          "1",
+          "{u}",
+          "{v}",
+          "{L}",
+          "{b}",
+          "1",
+          "{train}",
+          "{e}",
+          "2",
+          "{test}",
+          "4",
+          "s"
+        ]
+      },
+      "given_network_3d_4class": {
+        "answers": [
+          "2",
+          "{network}",
+          "2",
+          "{test}",
+          "4"
+        ]
+      },
+      "hidden_training_3d_4class": {
+        "answers": [
+          "1",
+          "{u}",
+          "{v}",
+          "{L}",
+          "{b}",
+          "1",
+          "{train}",
+          "{e}",
+          "2",
+          "{test}",
+          "4",
+          "s"
+        ]
+      }
+    }
+  },
+  {
+    "team": "LUMON",
+    "file": "perceptron_multicapa_3.py",
+    "commit": "ebc8c5d723f30dbbf93eb6c63f1f6aab14738216",
+    "reason": "Se verificó en el commit al cierre la confirmación de salida sin guardar del menú de Diego Mendez.",
+    "cases": {
+      "given_network_2d_2class": {
+        "answers": [
+          "2",
+          "{network}",
+          "2",
+          "{test}",
+          "4"
+        ]
+      },
+      "hidden_training_2d_2class": {
+        "answers": [
+          "1",
+          "{u}",
+          "{v}",
+          "{L}",
+          "{b}",
+          "1",
+          "{train}",
+          "{e}",
+          "2",
+          "{test}",
+          "4",
+          "s"
+        ]
+      },
+      "given_network_3d_4class": {
+        "answers": [
+          "2",
+          "{network}",
+          "2",
+          "{test}",
+          "4"
+        ]
+      },
+      "hidden_training_3d_4class": {
+        "answers": [
+          "1",
+          "{u}",
+          "{v}",
+          "{L}",
+          "{b}",
+          "1",
+          "{train}",
+          "{e}",
+          "2",
+          "{test}",
+          "4",
+          "s"
+        ]
+      }
+    }
+  }
+]
