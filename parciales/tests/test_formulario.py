@@ -105,7 +105,7 @@ def test_gate_code_gs_only_reads_fields_that_formulario_emits(tmp_path):
     payload = formulario.to_payload(exam, tmp_path)
     real_payload = formulario.to_payload(make_exam("real"), tmp_path)
     emitted = {
-        "EXAM": set(payload),
+        "exam": set(payload),
         "field": set(real_payload["identification"][0]),
         "section": set(payload["sections"][0]),
         "q": set(payload["sections"][1]["questions"][0]),

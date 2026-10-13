@@ -1,17 +1,17 @@
 # Parciales por Google Forms
 
 Flujo: banco de Moodle → template → examen resuelto → Google Form. Todo lo que lleva respuestas
-correctas (`banco/`, `specs/*.local.json`, `apps-script/<target>/`) está ignorado por git.
+correctas (`banco/`, `specs/*.local.json`, `apps-script/ExamData*.gs`) está ignorado por git.
 
 ```
 Moodle XML ─ banco.py ─► banco/banco.json + catalogo.csv   (+ banco/propias/*.json, preguntas escritas a mano)
 template ─ armar.py ─► specs/<nombre>.resuelto.local.json   (revisable y editable a mano)
-publicacion.json ─ publicar.py ─► apps-script/practica/ExamData.gs ─ clasp push ─► createExam() ─► Form de la práctica
-                                  apps-script/parcial/ExamData.gs  ─ clasp push ─► createExam() ─► Form del parcial
+publicacion.json ─ publicar.py ─► apps-script/ExamDataPractice.gs ─┐
+                                  apps-script/ExamDataReal.gs ─────┴─ clasp push ─► createExamPractice() / createExamReal()
 ```
 
-Dos proyectos de Apps Script conviven (`practica` y `parcial`), cada uno con su `ExamData.gs`. Qué examen resuelto va
-en cada uno lo dice [publicacion.json](publicacion.json) (versionado, sin respuestas).
+Un solo proyecto de Apps Script con dos exam data: la práctica y el parcial real. Qué examen resuelto va en cada uno lo dice
+[publicacion.json](publicacion.json) (versionado, sin respuestas).
 
 ## Uso
 
@@ -20,19 +20,20 @@ python parciales/banco.py                                   # normaliza el expor
 Copy-Item parciales\examen.ejemplo.json parciales\specs\parcial-1.local.json
 python parciales/armar.py parciales/specs/real-1-practica.local.json     # sortea (task: build-exam); la práctica primero
 python parciales/armar.py parciales/specs/parcial-1-real.local.json       # el real excluye la práctica
-python parciales/publicar.py                                # genera ExamData.gs de los dos proyectos (task: build-form)
-python parciales/publicar.py --push                         # ... y clasp push en cada uno (task: publish-forms)
-python parciales/publicar.py --only parcial --push          # un solo proyecto
+python parciales/publicar.py                                # genera los dos exam data (task: build-form)
+python parciales/publicar.py --push                         # ... y clasp push (task: publish-forms)
 ```
 
-Después se ejecuta `createExam` en el editor de Apps Script **de cada proyecto** (`clasp open` dentro de su carpeta) y el
-log trae el link de edición y el publicado. `createExam` es idempotente (misma data = no crea otro Form);
-`createExamAgain` crea una copia.
+Después se ejecuta en el editor de Apps Script (`clasp open` dentro de `apps-script/`) `createExamPractice` o
+`createExamReal`; el log trae el link de edición y el publicado. Son idempotentes (misma data = misma `key` = no crea otro
+Form, devuelve el existente); `createExamPracticeAgain` / `createExamRealAgain` crean una copia.
 
 **Siguiente parcial:** resolver los dos exámenes nuevos, cambiar los dos nombres en `publicacion.json` y correr
-`python parciales/publicar.py --push`. `Code.gs` y `appsscript.json` viven una sola vez en `apps-script/` y `publicar.py`
-los copia a cada proyecto en cada corrida, así que los proyectos no pueden divergir. Si algún examen falla al construirse
-no se escribe ningún proyecto (todo o nada).
+`python parciales/publicar.py --push`. Cada target es un archivo del proyecto (`practice` → `ExamDataPractice.gs` /
+`EXAM_PRACTICE` / `createExamPractice`; `real` → `ExamDataReal.gs` / `EXAM_REAL` / `createExamReal`). Si algún examen
+falla al construirse no se escribe nada (todo o nada) y un `ExamData*.gs` de un target que ya no existe se borra. Un gate
+(`test_publicar.py`) exige que cada target de `publicacion.json` tenga sus funciones en `Code.gs` y al revés: para agregar
+un tercer examen se declara en el JSON y se escriben sus dos funciones (copiar las de `createExamReal`).
 
 - **Preguntas propias**: las que no existen en Moodle van en `banco/propias/*.json` (una por archivo:
   `category`, `name`, `stem`, `options` con una sola `correct`). `banco.py` las descubre por disco y las fusiona en cada
@@ -67,15 +68,14 @@ los estudiantes prueben todo el flujo antes. Regla de repetición:
 1. Activar la **Google Apps Script API** en https://script.google.com/home/usersettings con la cuenta
    dueña de los Forms.
 2. `npm install -g @google/clasp` y `clasp login`.
-3. Un proyecto por carpeta de `publicacion.json`. Después de la primera corrida de `publicar.py` (que crea
-   `apps-script/<target>/`), una sola vez por proyecto:
+3. Un solo proyecto de Google para los dos exámenes. Una sola vez, desde `parciales\apps-script`:
    ```powershell
-   Set-Location parciales\apps-script\parcial
-   clasp create --type standalone --title "Parciales Forms - parcial"
+   Set-Location parciales\apps-script
+   clasp create --type standalone --title "Parciales Forms"
    ```
-   (escribe `.clasp.json` dentro de esa carpeta, ignorado por git; `clasp create` puede sobrescribir `appsscript.json`, no
-   importa: `publicar.py` lo vuelve a copiar desde el original en cada corrida). Hace falta `clasp push` completo: si
-   falla, en Google se queda el `ExamData.gs` anterior y `createExam` solo devuelve el link del Form viejo
+   (escribe `.clasp.json` en esa carpeta, ignorado por git; `clasp create` puede sobrescribir `appsscript.json`: restaurarlo
+   con `git checkout parciales/apps-script/appsscript.json` antes del primer push). Hace falta `clasp push` completo: si
+   falla, en Google se queda el exam data anterior y `createExam*` solo devuelve el link del Form viejo
    ("Already created"); `publicar.py --push` corta y lo dice.
 4. Primera ejecución de `createExam`: autorizar los permisos. Una app propia sin verificar muestra
    "Google no verificó esta app": Avanzado → Ir a "Parciales Forms" (no seguro).
