@@ -31,6 +31,19 @@ publicado. `createExam` es idempotente (misma data = no crea otro Form); `create
   un intento por usuario, correo, apellidos, nombres y cédula (solo números) obligatorios en una primera página, sin feedback). Un examen `real` con
   imágenes se rechaza: en Forms la imagen es un ítem aparte y el barajado la separaría de su pregunta.
 
+## Directriz: examen de práctica vs examen real
+
+La práctica ("Real 1 Práctica") y el parcial ("Parcial 1 Real") comparten estructura y modo `real`, para que
+los estudiantes prueben todo el flujo antes. Regla de repetición:
+
+- **La misma familia puede salir en ambos** (el estudiante practica el concepto), **nunca la misma pregunta**.
+- El template del real declara `"exclude_exams": ["real-1-practica"]`. Si el sorteo cae en una pregunta ya
+  usada en la práctica, un guard la sustituye por otra variante de su familia; si la familia no tiene más
+  variantes, toma la siguiente familia de la categoría. Cada sustitución queda en `substitutions` del
+  resuelto y se imprime al armar.
+- **Orden**: se resuelve primero la práctica y después el real (el real lee el resuelto de la práctica).
+- La puntuación 0.25 / 0.5 / 2.5 se escala x4 en Google (1 / 2 / 10 puntos, total 80); la nota sobre 20 es el puntaje / 4.
+
 ## Preparación única del lado de Google
 
 1. Activar la **Google Apps Script API** en https://script.google.com/home/usersettings con la cuenta

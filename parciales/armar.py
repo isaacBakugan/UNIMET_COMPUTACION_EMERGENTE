@@ -19,6 +19,12 @@ cannot render them faithfully) unless the pick says `"include_review": true`; a 
 reproducible (same template + seed + bank = same exam) and each pick has its own stream, so changing
 one pick never reshuffles the others. A question is never drawn together with another variant of
 itself (same `family`, see banco.py), and never twice. Keys starting with `_` are comments.
+
+Practice vs real: `"exclude_exams": ["real-1-practica"]` lists already resolved exams (by file name in
+specs/). The same FAMILY may be asked in both (the student practices the concept) but never the same
+QUESTION: when the draw lands on one already asked there, a guard swaps it for another variant of its
+family; if the family has no variant left it tries the next family of the category. Every swap is
+recorded in the resolved file (`substitutions`) and printed.
 """
 
 from __future__ import annotations
@@ -48,7 +54,10 @@ def _unknown_keys(label: str, data: dict, allowed: set[str]) -> list[str]:
 
 def validate_template(template: dict) -> list[str]:
     """Structural checks that need no bank; returns the list of problems (empty = valid)."""
-    errors = _unknown_keys("template", template, {"title", "mode", "seed", "shuffle_options", "sections"})
+    errors = _unknown_keys("template", template, {"title", "mode", "seed", "shuffle_options", "exclude_exams", "sections"})
+    excluded = template.get("exclude_exams", [])
+    if not isinstance(excluded, list) or not all(isinstance(name, str) and name for name in excluded):
+        errors.append("template: 'exclude_exams' must be a list of resolved-exam names (e.g. 'real-1-practica')")
     if "shuffle_options" in template and not isinstance(template["shuffle_options"], bool):
         errors.append("template: 'shuffle_options' must be true or false")
     if not isinstance(template.get("title"), str) or not template["title"].strip():
@@ -106,8 +115,11 @@ def _suggest_categories(questions: list[dict], target: str) -> str:
     return f" Did you mean: {close}?" if close else ""
 
 
-def resolve(template: dict, bank: list[dict], template_name: str = "", bank_source: str = "") -> dict:
-    """Draw the exam. `bank` is the list of usable questions of banco.json."""
+def resolve(template: dict, bank: list[dict], template_name: str = "", bank_source: str = "",
+            excluded_ids: frozenset[str] | set[str] = frozenset()) -> dict:
+    """Draw the exam. `bank` is the list of usable questions of banco.json.
+
+    `excluded_ids` are the questions of the exams listed in `exclude_exams`: never repeated (see the guard)."""
     errors = validate_template(template)
     if errors:
         raise TemplateError("invalid template:\n  " + "\n  ".join(errors))
@@ -115,6 +127,7 @@ def resolve(template: dict, bank: list[dict], template_name: str = "", bank_sour
     used_ids: set[str] = set()
     used_families: set[str] = set()
     warnings: list[str] = []
+    substitutions: list[dict] = []
 
     # pass 1: the questions fixed by hand, so the random picks (whatever their position) avoid them
     for s_index, section in enumerate(template["sections"]):
@@ -130,6 +143,8 @@ def resolve(template: dict, bank: list[dict], template_name: str = "", bank_sour
                                     f"'{question['section']}' question, not '{section['section']}'")
             if pick["id"] in used_ids:
                 raise TemplateError(f"{where}: id '{pick['id']}' ({question['name']}) is picked twice")
+            if pick["id"] in excluded_ids:
+                warnings.append(f"{where}: '{question['name']}' is fixed by hand but was already asked in an excluded exam")
             if question["family"] in used_families:
                 warnings.append(f"{where}: '{question['name']}' is a variant of another question fixed by hand")
             used_ids.add(pick["id"])
@@ -161,12 +176,37 @@ def resolve(template: dict, bank: list[dict], template_name: str = "", bank_sour
                                     f"'{pick['category']}' but only {len(families)} distinct ones are available "
                                     f"({len(pool)} in the category, the rest are variants or already used)")
             rng = random.Random(f"{template['seed']}:{s_index}:{p_index}")    # own stream per pick
-            for family in rng.sample(families, pick["count"]):
+            order = list(families)
+            rng.shuffle(order)    # families in the order they are tried
+            taken = skipped = 0
+            for family in order:
+                if taken == pick["count"]:
+                    break
                 members = sorted((q for q in available if q["family"] == family), key=lambda q: q["id"])
                 question = rng.choice(members)
+                if question["id"] in excluded_ids:
+                    # guard: this exact question was asked in an excluded exam (the practice one).
+                    # The same family may repeat, the same question may not: use a variant of it.
+                    siblings = [m for m in members if m["id"] not in excluded_ids]
+                    if not siblings:
+                        skipped += 1    # no variant left: try the next family of the category
+                        continue
+                    replacement = rng.choice(siblings)
+                    substitutions.append({"section": section["title"],
+                                          "replaced": {"id": question["id"], "name": question["name"]},
+                                          "by": {"id": replacement["id"], "name": replacement["name"]}})
+                    question = replacement
                 used_ids.add(question["id"])
                 used_families.add(family)
                 chosen.append(question)
+                taken += 1
+            if taken < pick["count"]:
+                raise TemplateError(f"section '{section['title']}': {pick['count']} questions requested from "
+                                    f"'{pick['category']}' but only {taken} are not already asked in the excluded "
+                                    f"exams {template.get('exclude_exams', [])}")
+            if skipped:
+                warnings.append(f"section '{section['title']}': {skipped} family(ies) of '{pick['category']}' skipped, "
+                                "every variant was already asked in an excluded exam")
         sections_out.append({
             "title": section["title"], "section": section["section"], "points": section["points"],
             "questions": [{"id": q["id"], "name": q["name"], "category": q["category"]} for q in chosen],
@@ -182,6 +222,8 @@ def resolve(template: dict, bank: list[dict], template_name: str = "", bank_sour
             "points": round(sum(s["points"] * len(s["questions"]) for s in sections_out), 4),
             "by_section": {s["title"]: len(s["questions"]) for s in sections_out},
         },
+        "exclude_exams": template.get("exclude_exams", []),
+        "substitutions": substitutions,
         "warnings": warnings,
     }
 
@@ -219,6 +261,19 @@ def output_path_for(template_path: Path) -> Path:
     return SPECS_DIR / f"{stem}.resuelto.local.json"
 
 
+def load_excluded_ids(names: list[str], specs_dir: Path | None = None) -> set[str]:
+    """Question ids of the resolved exams named in `exclude_exams` (e.g. 'real-1-practica')."""
+    specs_dir = specs_dir or SPECS_DIR
+    ids: set[str] = set()
+    for name in names:
+        path = specs_dir / f"{name}.resuelto.local.json"
+        if not path.exists():
+            raise TemplateError(f"exclude_exams: {path.name} not found; resolve '{name}' first")
+        resolved = json.loads(path.read_text(encoding="utf-8"))
+        ids |= {q["id"] for section in resolved["sections"] for q in section["questions"]}
+    return ids
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("template", type=Path)
@@ -232,7 +287,8 @@ def main(argv: list[str]) -> int:
     bank = json.loads(args.bank.read_text(encoding="utf-8"))
     template = json.loads(args.template.read_text(encoding="utf-8"))
     try:
-        resolved = resolve(template, bank["questions"], args.template.name, bank["source"])
+        excluded_ids = load_excluded_ids(template.get("exclude_exams", []))
+        resolved = resolve(template, bank["questions"], args.template.name, bank["source"], excluded_ids)
     except TemplateError as error:
         print(f"ERROR: {error}")
         return 1
@@ -251,6 +307,9 @@ def main(argv: list[str]) -> int:
         print(f"Written: {output}")
     print(f"{resolved['summary']['questions']} questions, {resolved['summary']['points']} points: "
           f"{resolved['summary']['by_section']}")
+    for swap in resolved["substitutions"]:
+        print(f"Guard: '{swap['replaced']['name']}' was already asked in {resolved['exclude_exams']}; "
+              f"replaced by its variant '{swap['by']['name']}'")
     for warning in resolved["warnings"]:
         print(f"WARNING: {warning}")
     return 0

@@ -172,6 +172,61 @@ def test_a_question_fixed_by_id_is_allowed_even_if_it_needs_review():
     assert ids(armar.resolve(template, bank), "VF") == ["q000"]
 
 
+CATEGORY = "Verdadero o Falso/VF I Redes/VF 1-Intro"
+
+
+def single_pick_template(count, seed=0, **extra):
+    return make_template(seed=seed, sections=[{"title": "VF", "section": "true_false", "points": 1,
+                                               "pick": [{"category": "VF 1-Intro", "count": count}]}], **extra)
+
+
+def test_the_guard_swaps_a_question_asked_in_the_excluded_exam_for_a_variant_of_its_family():
+    # 5 families with 2 variants each (ids 000/001, 002/003...); the practice exam asked the first variant of each
+    bank = [make_question(i, family=f"{CATEGORY}|f{i // 2}") for i in range(10)]
+    excluded = {f"q{i:03d}" for i in range(0, 10, 2)}
+    swaps_seen = 0
+    for seed in range(30):
+        resolved = armar.resolve(single_pick_template(5, seed, exclude_exams=["practica"]), bank, excluded_ids=excluded)
+        picked = ids(resolved, "VF")
+        assert not excluded & set(picked)                                  # never the same question
+        assert {int(i[1:]) // 2 for i in picked} == {0, 1, 2, 3, 4}        # the same families do repeat
+        for swap in resolved["substitutions"]:
+            assert int(swap["replaced"]["id"][1:]) // 2 == int(swap["by"]["id"][1:]) // 2    # same family
+        swaps_seen += len(resolved["substitutions"])
+    assert swaps_seen > 0, "the guard never fired: the test would prove nothing"
+
+
+def test_when_a_family_has_no_variant_left_the_guard_takes_the_next_family_of_the_category():
+    bank = [make_question(i) for i in range(6)]    # six single-question families
+    excluded = {"q000", "q001"}
+    for seed in range(30):
+        resolved = armar.resolve(single_pick_template(4, seed, exclude_exams=["practica"]), bank, excluded_ids=excluded)
+        assert set(ids(resolved, "VF")) == {"q002", "q003", "q004", "q005"}
+    with pytest.raises(armar.TemplateError, match="only 4 are not already asked"):
+        armar.resolve(single_pick_template(5, exclude_exams=["practica"]), bank, excluded_ids=excluded)
+
+
+def test_a_question_fixed_by_hand_that_was_already_asked_only_warns():
+    bank = make_bank()
+    template = single_pick_template(1, exclude_exams=["practica"])
+    template["sections"][0]["pick"] = [{"id": "q000"}]
+    resolved = armar.resolve(template, bank, excluded_ids={"q000"})
+    assert ids(resolved, "VF") == ["q000"] and "already asked" in resolved["warnings"][0]
+
+
+def test_exclude_exams_must_be_a_list_of_names():
+    errors = armar.validate_template(make_template(exclude_exams="real-1-practica"))
+    assert any("'exclude_exams'" in error for error in errors)
+
+
+def test_the_excluded_ids_are_read_from_the_resolved_files(tmp_path):
+    (tmp_path / "practica.resuelto.local.json").write_text(json.dumps(
+        {"sections": [{"questions": [{"id": "a"}, {"id": "b"}]}, {"questions": [{"id": "c"}]}]}), encoding="utf-8")
+    assert armar.load_excluded_ids(["practica"], tmp_path) == {"a", "b", "c"}
+    with pytest.raises(armar.TemplateError, match="resolve 'otra' first"):
+        armar.load_excluded_ids(["otra"], tmp_path)
+
+
 def test_the_summary_adds_up_the_points():
     resolved = armar.resolve(make_template(), make_bank())
     assert resolved["summary"] == {"questions": 9, "points": 6.0, "by_section": {"VF": 6, "SS": 3}}
