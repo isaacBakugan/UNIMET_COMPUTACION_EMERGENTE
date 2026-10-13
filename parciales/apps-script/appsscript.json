@@ -1,14 +1,7 @@
 {
-  "timeZone": "America/Caracas",
-  "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8",
+  "timeZone": "America/New_York",
   "dependencies": {
-    "enabledAdvancedServices": [
-      { "userSymbol": "Forms", "serviceId": "forms", "version": "v1" }
-    ]
   },
-  "oauthScopes": [
-    "https://www.googleapis.com/auth/forms",
-    "https://www.googleapis.com/auth/drive"
-  ]
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
 }

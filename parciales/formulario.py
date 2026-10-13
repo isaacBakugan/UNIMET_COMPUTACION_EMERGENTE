@@ -29,6 +29,13 @@ from banco import BANK_FILE, IMAGES_DIR
 APPS_SCRIPT_DIR = Path(__file__).resolve().parent / "apps-script"
 EXAM_DATA_FILE = APPS_SCRIPT_DIR / "ExamData.gs"
 MAX_FORM_POINTS = 100    # Google Forms limit per question
+# Asked first in a 'real' exam, on a page of their own (shuffling only reorders the items of one page).
+# Surname and name are separate so they can be matched against trimestre-actual/lista-entrega.csv.
+IDENTIFICATION_FIELDS = [
+    {"title": "Apellidos", "help": "", "pattern": ""},
+    {"title": "Nombres", "help": "", "pattern": ""},
+    {"title": "Cédula de identidad", "help": "Solo números, sin puntos, guiones ni letras.", "pattern": "^[0-9]{6,9}$"},
+]
 
 
 def points_scale(points: list[float]) -> int:
@@ -60,6 +67,7 @@ def to_payload(exam: dict, images_dir: Path = IMAGES_DIR) -> dict:
     """`exam` comes from armar.join_with_bank (resolved entries with their full question attached)."""
     scale = points_scale([s["points"] for s in exam["sections"]])
     real = exam["mode"] == "real"
+    shuffle_options = exam.get("shuffle_options", False)    # off unless the template opts in
     sections = []
     for section in exam["sections"]:
         questions = []
@@ -72,7 +80,7 @@ def to_payload(exam: dict, images_dir: Path = IMAGES_DIR) -> dict:
             questions.append({
                 "id": question["id"], "name": question["name"], "stem": question["stem"],
                 "options": _options(question),
-                "shuffle_options": question["section"] != "true_false" and question["shuffle_options"],
+                "shuffle_options": shuffle_options and question["section"] != "true_false" and question["shuffle_options"],
                 "points": int(Fraction(str(section["points"])) * scale),
                 "images": _images(question, images_dir),
             })
@@ -83,7 +91,8 @@ def to_payload(exam: dict, images_dir: Path = IMAGES_DIR) -> dict:
     if scale != 1:
         description += f" (Cada punto de Google equivale a 1/{scale} de punto; el total equivale a {float(original_total):g}.)"
     payload = {"title": exam["title"], "mode": exam["mode"], "description": description,
-               "points_scale": scale, "sections": sections}
+               "points_scale": scale, "identification": IDENTIFICATION_FIELDS if real else [],
+               "sections": sections}
     canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True)
     payload["key"] = hashlib.sha1(canonical.encode("utf-8")).hexdigest()[:12]    # idempotence key of Code.gs
     return payload

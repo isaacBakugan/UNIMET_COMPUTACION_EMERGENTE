@@ -1,0 +1,27 @@
+{
+  "_ayuda": "Prueba de humo en modo real: 6 preguntas (2 de cada tipo) para que se note el barajado. Se responde como estudiante y se prueba la liberación de notas por parte del profesor.",
+  "title": "Prueba de humo REAL - Parcial",
+  "mode": "real",
+  "seed": 1,
+  "shuffle_options": false,
+  "sections": [
+    {
+      "title": "Verdadero o Falso",
+      "section": "true_false",
+      "points": 1,
+      "pick": [{"category": "VF I Redes Neuronales", "count": 2}]
+    },
+    {
+      "title": "Selección simple",
+      "section": "simple_choice",
+      "points": 1,
+      "pick": [{"category": "SS I Redes Neuronales", "count": 2}]
+    },
+    {
+      "title": "Desarrollo",
+      "section": "development",
+      "points": 2,
+      "pick": [{"category": "RC Ejecute el algoritmo", "count": 2}]
+    }
+  ]
+}

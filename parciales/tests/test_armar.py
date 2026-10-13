@@ -58,6 +58,7 @@ def test_gate_every_committed_template_example_is_valid():
     (lambda t: t.update(mode="exam"), "'mode'"),
     (lambda t: t.update(seed="7"), "'seed'"),
     (lambda t: t.update(extra=1), "unknown key 'extra'"),
+    (lambda t: t.update(shuffle_options="yes"), "'shuffle_options'"),
     (lambda t: t["sections"][0].update(section="essay"), "'section'"),
     (lambda t: t["sections"][0].update(points=0), "'points'"),
     (lambda t: t["sections"][0]["pick"].append({"category": "X", "count": 0}), "'count'"),

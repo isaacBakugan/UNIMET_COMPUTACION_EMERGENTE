@@ -41,6 +41,19 @@ function buildExam_(force) {
     .setPublishingSummary(false)
     .setAcceptingResponses(true);
 
+  EXAM.identification.forEach(function (field) {
+    const item = form.addTextItem().setTitle(field.title).setRequired(true);
+    if (field.help) item.setHelpText(field.help);
+    if (field.pattern) {
+      item.setValidation(FormApp.createTextValidation()
+        .setHelpText(field.help)
+        .requireTextMatchesPattern(field.pattern)
+        .build());
+    }
+  });
+  // own page: shuffling only reorders the items of one page, so the identification stays first
+  if (EXAM.identification.length > 0) form.addPageBreakItem().setTitle('Preguntas');
+
   const shuffledItemIds = [];
   EXAM.sections.forEach(function (section) {
     // headers would be shuffled away from their questions in a real (shuffled) exam
@@ -66,7 +79,7 @@ function buildExam_(force) {
     });
   });
 
-  const shuffleStatus = shuffleOptions_(form, shuffledItemIds);
+  const shuffleStatus = optionShuffleStatus_(shuffledItemIds.length);
 
   const folders = DriveApp.getFoldersByName(FOLDER_NAME);
   DriveApp.getFileById(form.getId()).moveTo(folders.hasNext() ? folders.next() : DriveApp.createFolder(FOLDER_NAME));
@@ -81,26 +94,11 @@ function buildExam_(force) {
 }
 
 /**
- * FormApp has no option-shuffle method, so it goes through the Forms advanced service.
- * Fail-soft but loud: the status is logged, never swallowed.
+ * FormApp has no method to shuffle the options of a question, and Forms is not an Apps Script advanced
+ * service, so this version cannot apply it. It says so instead of staying silent: the template asked for
+ * the shuffle, the Form does not have it.
  */
-function shuffleOptions_(form, itemIds) {
-  if (itemIds.length === 0) return 'nothing to shuffle';
-  try {
-    const requests = [];
-    form.getItems().forEach(function (item, index) {
-      if (itemIds.indexOf(item.getId()) === -1) return;
-      requests.push({
-        updateItem: {
-          item: { questionItem: { question: { choiceQuestion: { shuffle: true } } } },
-          location: { index: index },
-          updateMask: 'questionItem.question.choiceQuestion.shuffle',
-        },
-      });
-    });
-    Forms.Forms.batchUpdate({ requests: requests }, form.getId());
-    return 'applied to ' + requests.length + ' questions';
-  } catch (error) {
-    return 'NOT APPLIED (' + error.message + '): turn on "Shuffle option order" by hand';
-  }
+function optionShuffleStatus_(requestedCount) {
+  if (requestedCount === 0) return 'off';
+  return 'NOT APPLIED (' + requestedCount + ' questions asked for it): turn on "Shuffle option order" by hand';
 }

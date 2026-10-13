@@ -48,7 +48,9 @@ def _unknown_keys(label: str, data: dict, allowed: set[str]) -> list[str]:
 
 def validate_template(template: dict) -> list[str]:
     """Structural checks that need no bank; returns the list of problems (empty = valid)."""
-    errors = _unknown_keys("template", template, {"title", "mode", "seed", "sections"})
+    errors = _unknown_keys("template", template, {"title", "mode", "seed", "shuffle_options", "sections"})
+    if "shuffle_options" in template and not isinstance(template["shuffle_options"], bool):
+        errors.append("template: 'shuffle_options' must be true or false")
     if not isinstance(template.get("title"), str) or not template["title"].strip():
         errors.append("template: 'title' must be a non-empty string")
     if template.get("mode") not in MODES:
@@ -173,6 +175,7 @@ def resolve(template: dict, bank: list[dict], template_name: str = "", bank_sour
     total_questions = sum(len(s["questions"]) for s in sections_out)
     return {
         "title": template["title"], "mode": template["mode"], "seed": template["seed"],
+        "shuffle_options": template.get("shuffle_options", False),    # opt-in: off unless the template asks
         "template": template_name, "bank": bank_source, "sections": sections_out,
         "summary": {
             "questions": total_questions,

@@ -41,10 +41,16 @@ def test_points_that_cannot_fit_google_forms_are_rejected():
 
 
 def test_true_false_keeps_a_fixed_order_and_is_never_option_shuffled(tmp_path):
-    payload = formulario.to_payload(make_exam(), tmp_path)
+    payload = formulario.to_payload({**make_exam(), "shuffle_options": True}, tmp_path)
     true_false, simple = (s["questions"][0] for s in payload["sections"])
     assert [o["text"] for o in true_false["options"]] == ["Verdadero", "Falso"]
     assert true_false["shuffle_options"] is False and simple["shuffle_options"] is True
+
+
+def test_options_are_not_shuffled_unless_the_template_opts_in(tmp_path):
+    for exam in (make_exam(), {**make_exam(), "shuffle_options": False}):
+        payload = formulario.to_payload(exam, tmp_path)
+        assert not any(q["shuffle_options"] for s in payload["sections"] for q in s["questions"])
 
 
 def test_scaled_points_are_integers_and_the_description_explains_the_scale(tmp_path):
@@ -62,6 +68,20 @@ def test_a_real_exam_rejects_images_but_a_practice_exam_embeds_them(tmp_path):
     payload = formulario.to_payload(make_exam("practice", questions=with_image), tmp_path)
     image = payload["sections"][1]["questions"][0]["images"][0]
     assert image["mime"] == "image/png" and image["name"] == "fig.png"
+
+
+def test_only_a_real_exam_asks_for_surname_name_and_id_number(tmp_path):
+    assert formulario.to_payload(make_exam("practice"), tmp_path)["identification"] == []
+    fields = formulario.to_payload(make_exam("real"), tmp_path)["identification"]
+    assert [f["title"] for f in fields] == ["Apellidos", "Nombres", "Cédula de identidad"]
+    assert all(f["title"] for f in fields)
+
+
+@pytest.mark.parametrize("value, valid", [("12345678", True), ("987654", True), ("V12345678", False),
+                                          ("12.345.678", False), ("12345678 ", False), ("123", False), ("", False)])
+def test_the_id_number_accepts_digits_only(value, valid):
+    pattern = formulario.IDENTIFICATION_FIELDS[-1]["pattern"]
+    assert (re.fullmatch(pattern, value) is not None) is valid
 
 
 def test_the_idempotence_key_follows_the_content(tmp_path):
@@ -83,8 +103,10 @@ def test_gate_code_gs_only_reads_fields_that_formulario_emits(tmp_path):
     (tmp_path / "q002" / "fig.png").write_bytes(b"x")
     exam = make_exam(questions=[make_question(1, "true_false"), make_question(2, image_files=["fig.png"])])
     payload = formulario.to_payload(exam, tmp_path)
+    real_payload = formulario.to_payload(make_exam("real"), tmp_path)
     emitted = {
         "EXAM": set(payload),
+        "field": set(real_payload["identification"][0]),
         "section": set(payload["sections"][0]),
         "q": set(payload["sections"][1]["questions"][0]),
         "o": set(payload["sections"][1]["questions"][0]["options"][0]),
