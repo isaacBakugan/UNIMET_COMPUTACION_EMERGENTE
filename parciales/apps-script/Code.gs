@@ -47,7 +47,7 @@ function buildExam_(exam, force) {
     .setCollectEmail(real)
     .setRequireLogin(real)
     .setLimitOneResponsePerUser(real)
-    .setShuffleQuestions(real)
+    .setShuffleQuestions(exam.shuffle_questions)
     .setAllowResponseEdits(false)
     .setShowLinkToRespondAgain(!real)
     .setPublishingSummary(false)

@@ -84,6 +84,23 @@ def test_the_id_number_accepts_digits_only(value, valid):
     assert (re.fullmatch(pattern, value) is not None) is valid
 
 
+@pytest.mark.parametrize("mode, override, expected", [
+    ("real", {}, True),    # resolved files from before the option existed keep the old behaviour
+    ("practice", {}, False),
+    ("real", {"shuffle_questions": False}, False),
+    ("practice", {"shuffle_questions": True}, True),
+])
+def test_the_form_shuffles_the_questions_as_the_resolved_exam_says(tmp_path, mode, override, expected):
+    assert formulario.to_payload({**make_exam(mode), **override}, tmp_path)["shuffle_questions"] is expected
+
+
+def test_the_idempotence_key_changes_when_the_question_order_policy_changes(tmp_path):
+    """A different order is a different Form: createExam* must not hand back the old (shuffled) one."""
+    shuffled = formulario.to_payload(make_exam("real"), tmp_path)
+    fixed = formulario.to_payload({**make_exam("real"), "shuffle_questions": False}, tmp_path)
+    assert shuffled["key"] != fixed["key"]
+
+
 def test_the_idempotence_key_follows_the_content(tmp_path):
     base = formulario.to_payload(make_exam(), tmp_path)
     assert base["key"] == formulario.to_payload(make_exam(), tmp_path)["key"]
@@ -117,6 +134,12 @@ def test_gate_code_gs_only_reads_fields_that_formulario_emits(tmp_path):
         read = set(re.findall(rf"\b{variable}\.(\w+)", code))
         assert read, f"Code.gs reads no `{variable}.*` field: the gate would prove nothing"
         assert read <= fields, f"Code.gs reads `{variable}.{sorted(read - fields)}` which formulario.py does not emit"
+
+
+def test_gate_code_gs_shuffles_the_questions_from_the_exam_data_not_from_the_mode():
+    """The contract gate only checks that Code.gs reads fields Python emits, not that it uses the ones that matter."""
+    code = (APPS_SCRIPT / "Code.gs").read_text(encoding="utf-8")
+    assert ".setShuffleQuestions(exam.shuffle_questions)" in code,         "Code.gs must take the question order from exam.shuffle_questions (the template decides), not from the mode"
 
 
 def test_gate_the_forms_advanced_service_is_declared_when_code_gs_uses_it():

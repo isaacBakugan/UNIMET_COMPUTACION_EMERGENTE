@@ -49,6 +49,8 @@ un tercer examen se declara en el JSON y se escriben sus dos funciones (copiar l
 - **Modos**: `practice` (secciones, feedback con la respuesta correcta, sin login) y `real` (preguntas y
   un intento por usuario, correo, apellidos, nombres y cédula (solo números) obligatorios en una primera página, sin feedback). Un examen `real` con
   imágenes se rechaza: en Forms la imagen es un ítem aparte y el barajado la separaría de su pregunta.
+- **Orden de las preguntas**: `real` baraja por defecto; `"shuffle_questions": false` en el template lo deja fijo, en el orden del
+  resuelto (V/F, SS, desarrollo). Cambiarlo cambia la `key` del examen: `createExam*` crea un Form nuevo, no devuelve el viejo.
 
 ## Directriz: examen de práctica vs examen real
 
@@ -89,4 +91,4 @@ La API no documenta todo; esto se comprueba mirando el Form creado:
 - [ ] Feedback de práctica: al responder aparece "La respuesta correcta es: ...".
 - [ ] El log dice `Option shuffle: off`. El barajado de opciones (`shuffle_options: true` en el template) no está implementado: Apps Script no lo expone y Forms no es un servicio avanzado; el log lo avisa con `NOT APPLIED`.
 - [ ] En Configuración → Pruebas, ver cuándo se liberan las notas (inmediato o tras revisión): no es configurable por API.
-- [ ] En modo `real`: los datos de identificación (apellidos, nombres, cédula de 6 a 9 dígitos) salen primero, en su propia página; las preguntas de la página 2 salen barajadas; un intento por usuario; correo obligatorio.
+- [ ] En modo `real`: los datos de identificación (apellidos, nombres, cédula de 6 a 9 dígitos) salen primero, en su propia página; las preguntas de la página 2 salen barajadas, salvo que el template diga `"shuffle_questions": false` (entonces salen en el orden del resuelto, el mismo de `clave.csv`); un intento por usuario; correo obligatorio.

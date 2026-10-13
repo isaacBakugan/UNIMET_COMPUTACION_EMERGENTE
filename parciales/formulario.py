@@ -68,6 +68,7 @@ def to_payload(exam: dict, images_dir: Path = IMAGES_DIR) -> dict:
     scale = points_scale([s["points"] for s in exam["sections"]])
     real = exam["mode"] == "real"
     shuffle_options = exam.get("shuffle_options", False)    # off unless the template opts in
+    shuffle_questions = exam.get("shuffle_questions", real)    # a real exam shuffles unless the template says false
     sections = []
     for section in exam["sections"]:
         questions = []
@@ -91,7 +92,7 @@ def to_payload(exam: dict, images_dir: Path = IMAGES_DIR) -> dict:
     if scale != 1:
         description += f" (Cada punto de Google equivale a 1/{scale} de punto; el total equivale a {float(original_total):g}.)"
     payload = {"title": exam["title"], "mode": exam["mode"], "description": description,
-               "points_scale": scale, "identification": IDENTIFICATION_FIELDS if real else [],
+               "shuffle_questions": shuffle_questions, "points_scale": scale, "identification": IDENTIFICATION_FIELDS if real else [],
                "sections": sections}
     canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True)
     payload["key"] = hashlib.sha1(canonical.encode("utf-8")).hexdigest()[:12]    # idempotence key of Code.gs

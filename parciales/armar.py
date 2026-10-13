@@ -54,12 +54,14 @@ def _unknown_keys(label: str, data: dict, allowed: set[str]) -> list[str]:
 
 def validate_template(template: dict) -> list[str]:
     """Structural checks that need no bank; returns the list of problems (empty = valid)."""
-    errors = _unknown_keys("template", template, {"title", "mode", "seed", "shuffle_options", "exclude_exams", "sections"})
+    errors = _unknown_keys("template", template, {"title", "mode", "seed", "shuffle_options", "shuffle_questions", "exclude_exams", "sections"})
     excluded = template.get("exclude_exams", [])
     if not isinstance(excluded, list) or not all(isinstance(name, str) and name for name in excluded):
         errors.append("template: 'exclude_exams' must be a list of resolved-exam names (e.g. 'real-1-practica')")
     if "shuffle_options" in template and not isinstance(template["shuffle_options"], bool):
         errors.append("template: 'shuffle_options' must be true or false")
+    if "shuffle_questions" in template and not isinstance(template["shuffle_questions"], bool):
+        errors.append("template: 'shuffle_questions' must be true or false")
     if not isinstance(template.get("title"), str) or not template["title"].strip():
         errors.append("template: 'title' must be a non-empty string")
     if template.get("mode") not in MODES:
@@ -216,6 +218,7 @@ def resolve(template: dict, bank: list[dict], template_name: str = "", bank_sour
     return {
         "title": template["title"], "mode": template["mode"], "seed": template["seed"],
         "shuffle_options": template.get("shuffle_options", False),    # opt-in: off unless the template asks
+        "shuffle_questions": template.get("shuffle_questions", template["mode"] == "real"),    # a real exam shuffles by default
         "template": template_name, "bank": bank_source, "sections": sections_out,
         "summary": {
             "questions": total_questions,

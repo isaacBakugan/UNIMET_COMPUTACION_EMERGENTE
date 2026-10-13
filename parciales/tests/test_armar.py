@@ -59,6 +59,7 @@ def test_gate_every_committed_template_example_is_valid():
     (lambda t: t.update(seed="7"), "'seed'"),
     (lambda t: t.update(extra=1), "unknown key 'extra'"),
     (lambda t: t.update(shuffle_options="yes"), "'shuffle_options'"),
+    (lambda t: t.update(shuffle_questions="no"), "'shuffle_questions'"),
     (lambda t: t["sections"][0].update(section="essay"), "'section'"),
     (lambda t: t["sections"][0].update(points=0), "'points'"),
     (lambda t: t["sections"][0]["pick"].append({"category": "X", "count": 0}), "'count'"),
@@ -254,3 +255,14 @@ def test_a_resolved_exam_edited_by_hand_is_revalidated_against_the_bank():
 ])
 def test_the_resolved_file_always_lands_in_the_ignored_specs_folder(template_name, expected):
     assert armar.output_path_for(Path("cualquier/carpeta") / template_name) == armar.SPECS_DIR / expected
+
+
+@pytest.mark.parametrize("mode, override, expected", [
+    ("real", {}, True),    # a real exam shuffles unless the template says otherwise
+    ("practice", {}, False),
+    ("real", {"shuffle_questions": False}, False),
+    ("practice", {"shuffle_questions": True}, True),
+])
+def test_the_resolved_exam_records_whether_the_questions_are_shuffled(mode, override, expected):
+    template = make_template(mode=mode, **override)
+    assert armar.resolve(template, make_bank())["shuffle_questions"] is expected
