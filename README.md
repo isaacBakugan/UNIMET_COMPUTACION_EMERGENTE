@@ -263,9 +263,11 @@ La columna **Revisar** marca los casos donde el criterio es visual y conviene ab
 - Los tests del corrector corren con `task test` (`pytest correcciones/tests`).
 
 ### Corregir la Tarea 2 (perceptrón multicapa)
-`python correcciones/calificador_tarea_2.py --update` refresca las entregas y regenera `notas.csv`,
-`notas-sheets.csv` e `informe.md`. Ejecuta carga y entrenamiento con los cuatro casos en el sandbox;
-las notas son propuestas y los casos pendientes se marcan para revisión. Uso y configuración en
+`pwsh -NoProfile -File scripts/traer-repos-trimestre.ps1` trae primero los repos locales.
+Después, `python correcciones/tarea-2/corregir.py` regenera `notas.csv`,
+`notas-sheets.csv` e `informe.md`. Ejecuta carga y entrenamiento con los cuatro casos en el sandbox.
+La opción `--update` ejecuta el mismo script del profesor antes de corregir.
+Las notas son propuestas y los casos pendientes se marcan para revisión. Uso y configuración en
 [correcciones/tarea-2/README.md](correcciones/tarea-2/README.md).
 
 ### Corregir la Tarea 3 (PyTorch)

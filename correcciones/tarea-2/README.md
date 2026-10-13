@@ -1,24 +1,29 @@
 # Corrección de la Tarea 2 — Perceptrón multicapa
 
-El comando del preparador es `python correcciones/calificador_tarea_2.py --update`, desde la raíz del repositorio central. Descarga o actualiza los clones con `git fetch`, lee la rama remota y regenera las notas y el análisis. No modifica los repositorios estudiantiles.
+El flujo del profesor tiene dos pasos: ejecutar `scripts/traer-repos-trimestre.ps1` para traer los repos a `.repos-trimestre-<trimestre>/` y ejecutar `python correcciones/tarea-2/corregir.py` para regenerar las notas y el análisis. Las entregas y los resultados se trabajan localmente y están ignorados por Git. El corrector no modifica los repositorios estudiantiles.
 
 ## Paso a paso
 
 1. `git switch develop` y `git pull origin develop` antes de trabajar.
 2. En Ubuntu/WSL, instalar una vez: `sudo apt install bubblewrap python3-matplotlib python3-numpy python3-pandas`.
 3. Revisar `tarea.json`: cierre **11 de octubre de 2026, 23:59:59, Caracas** (incluye el minuto de las 11:59 p. m.), confirmado por la preparadora. `--cutoff` permite otra fecha ISO con zona horaria. Antes del cierre el reporte se marca PRELIMINAR.
-4. Ejecutar desde la raíz:
+4. Ejecutar desde la raíz primero el script del profesor y después la corrección:
 
    ```powershell
-   python correcciones/calificador_tarea_2.py --update
-   # Opcional: un equipo, otra carpeta privada o un límite de ejecución mayor
-   python correcciones/calificador_tarea_2.py --team G1 --timeout 180
+   pwsh -NoProfile -File scripts/traer-repos-trimestre.ps1
+   python correcciones/tarea-2/corregir.py
+   # Un comando: llama al mismo script del profesor antes de corregir
+   python correcciones/tarea-2/corregir.py --update
+   # Opcional: un equipo y un límite de ejecución mayor
+   python correcciones/tarea-2/corregir.py --team G1 --timeout 180
    ```
 
-   Alternativas con taskipy: `task grade-tarea-2` y `task grade-tarea-2-update`.
+   Alternativas con taskipy: `task fetch-repos`, `task grade-tarea-2` y `task grade-tarea-2-update`. `--update` respeta `--clones` y `--team`; si el script del profesor falla, la corrección se detiene antes de generar notas con datos incompletos.
+
+   El punto de entrada está en esta carpeta (`corregir.py`) y reutiliza el motor `correcciones/calificador_tarea_2.py` y los módulos compartidos. El comando anterior sigue funcionando por compatibilidad, con la misma actualización oficial.
 5. Revisar `needs_review` en `notas.csv` y el detalle de `informe.md`. Las matrices y las gráficas son evidencia capturada del programa: las notas automáticas son **propuestas**, sujetas a la interpretación docente de «clasifica correctamente». En particular, el corrector propone 25 solo cuando toda la matriz de prueba es diagonal; propone 15 si hay clasificaciones erróneas. No inventa un umbral porcentual. Si el docente considera correcta una clasificación con errores, debe registrar su decisión.
 6. Para confirmar o corregir un criterio, registrar una entrada en `decisiones-docente.json` con `team`, `file`, `commit` exacto, `reason` y `cases` (ver ejemplo abajo). Volver a ejecutar el mismo comando. La decisión caduca al cambiar el commit y aparece una advertencia.
-7. Para otra actualización estudiantil, repetir `python correcciones/calificador_tarea_2.py --update`. Las versiones al cierre y tardías se vuelven a evaluar; una nota tardía nunca reduce la nota al cierre.
+7. Para otra actualización estudiantil, repetir `python correcciones/tarea-2/corregir.py --update`. Las versiones al cierre y tardías se vuelven a evaluar; una nota tardía nunca reduce la nota al cierre.
 
 ## Resultados privados
 

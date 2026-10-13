@@ -85,12 +85,13 @@ Reglas prácticas:
 ## 3. Obtener la data del trimestre (en tu máquina)
 
 ```powershell
-# 1. Trae/actualiza los repos de los equipos (clona si faltan, fetch si ya existen). Sale de trimestre-actual/estado.json
-python correcciones/calificador_corte.py --update
+# 1. Trae/actualiza los repos con el script del profesor (clona o fetch + fast-forward).
+# Sale de trimestre-actual/estado.json y deja las tareas/cortes en .repos-trimestre-<trimestre>/
+pwsh -NoProfile -File scripts/traer-repos-trimestre.ps1
 
 # 2. Genera las notas
 python correcciones/calificador.py                       # Tarea 1: todos los estudiantes
-python correcciones/calificador_tarea_2.py --update       # Tarea 2: refrescar y corregir
+python correcciones/tarea-2/corregir.py                   # Tarea 2: corregir los clones locales
 python correcciones/calificador.py --team G1             # un solo equipo
 python correcciones/calificador_corte.py                 # Corte de preguntas 1
 ```
@@ -99,9 +100,11 @@ Los resultados quedan en `correcciones/resultados/<trimestre>/<tarea>/`:
 `notas-sheets.csv` (la columna `Nota` se pega tal cual en Google Sheets), `notas.csv` e `informe.md`.
 
 > `calificador.py --update` depende de `tareas/verify_submissions.py`, que hoy tiene el trimestre `2627-1` y un CSV de
-> invitaciones fijos en el código. Para refrescar clones en otra máquina usa el paso 1 de arriba.
+> invitaciones fijos en el código. Para refrescar clones en otra máquina usa el script `traer-repos-trimestre.ps1` del paso 1.
+> `python correcciones/tarea-2/corregir.py --update` ejecuta ese mismo script y luego corrige.
 
-Tareas futuras: ver [correcciones/tarea-2/README.md](correcciones/tarea-2/README.md) y
+Tarea 2: corrector disponible y flujo paso a paso en [correcciones/tarea-2/README.md](correcciones/tarea-2/README.md).
+Tareas futuras: ver
 [correcciones/tarea-3/README.md](correcciones/tarea-3/README.md) y
 [correcciones/tarea-4/README.md](correcciones/tarea-4/README.md) y
 [correcciones/tarea-5/README.md](correcciones/tarea-5/README.md) (configuración y directrices ya dejadas; los

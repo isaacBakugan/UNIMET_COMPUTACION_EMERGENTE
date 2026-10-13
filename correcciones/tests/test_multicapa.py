@@ -139,6 +139,51 @@ def test_prepare_data_copies_all_authoritative_cases(tmp_path):
     assert len(list(data.glob('*.csv'))) == 8
 
 
+def test_task_folder_entry_point_supports_the_grading_options():
+    import subprocess
+    import sys
+    subjects = sorted(CONFIG.glob('corregir.py'))
+    assert subjects, f'No Tarea 2 entry point found: {CONFIG / "corregir.py"}'
+    for script in subjects:
+        result = subprocess.run([sys.executable, str(script), '--help'], capture_output=True, text=True)
+        assert result.returncode == 0, f'{script}: {result.stderr}'
+        assert all(option in result.stdout for option in ('--update', '--clones', '--team', '--cutoff'))
+
+
+def test_update_delegates_to_the_official_script_and_quotes_arguments(monkeypatch, tmp_path):
+    import calificador_tarea_2 as grader
+    calls = []
+    monkeypatch.setattr(grader.shutil, 'which', lambda name: '/runtime/pwsh')
+    monkeypatch.setattr(grader.subprocess, 'run', lambda args, **kwargs: calls.append((args, kwargs)))
+    grader.refresh_clones(tmp_path / "clones' with spaces", ['T1', "T'2"], ('grupo-control',))
+    args, options = calls[0]
+    assert args[:4] == ['/runtime/pwsh', '-NoProfile', '-NonInteractive', '-Command']
+    assert "traer-repos-trimestre.ps1'" in args[-1]
+    assert "-Team @('T1','T''2')" in args[-1]
+    assert "clones'' with spaces'" in args[-1]
+    assert options == {'check': True}
+
+
+def test_failed_official_refresh_aborts_before_collecting_or_writing_grades(monkeypatch, tmp_path):
+    import calificador_tarea_2 as grader
+    import subprocess
+    import sys
+    output = tmp_path / 'report'
+    monkeypatch.setattr(sys, 'argv', ['corregir.py', '--update', '--output', str(output)])
+
+    def failed_refresh(*args):
+        raise subprocess.CalledProcessError(1, 'traer-repos-trimestre.ps1')
+
+    def should_not_collect(*args):
+        pytest.fail('Collected submissions after the official refresh failed')
+
+    monkeypatch.setattr(grader, 'refresh_clones', failed_refresh)
+    monkeypatch.setattr(grader, 'collect_submissions', should_not_collect)
+    with pytest.raises(subprocess.CalledProcessError):
+        grader.main()
+    assert not output.exists()
+
+
 def test_future_sentinel_does_not_wrap_to_the_past_in_git(tmp_path):
     import subprocess
     from entregas import commit_at_cutoff, commits_after_cutoff

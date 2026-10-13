@@ -17,17 +17,38 @@ from pathlib import Path
 from calificador import (Submission, apply_overrides, build_rows, fill_identity_from_roster,
                          load_active_repos, load_delivery_list, load_overrides, order_by_delivery_list,
                          pick_best_versions, print_summary, read_csv, write_outputs)
-from clones import sync_clone
 from entregas import (commit_at_cutoff, commit_date, commit_exists, commits_after_cutoff,
                       export_assignment, git, remote_ref, static_review, student_identity, to_utc_iso)
 from multicapa import CASE_KEYS, FILES, FOLDER, console_answers, load_profiles, score_trace, select_network
 from lista import normalize
 from rubrica import CaseResult, load_rubric
-from sandbox import WSL_PREFIX, check_runtime, isolated_command
+from sandbox import check_runtime, isolated_command
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / "correcciones" / "tarea-2"
 ALLOWED_IMPORTS = set(sys.stdlib_module_names) | {"numpy", "pandas", "matplotlib", "mpl_toolkits"}
+
+
+def refresh_clones(clones: Path, teams: list[str], excluded: tuple[str, ...]) -> None:
+    """Delegate all clone/fetch/fast-forward work to the professor's term script."""
+    shell = shutil.which("pwsh") or (shutil.which("powershell") if sys.platform == "win32" else None)
+    if shell is None:
+        raise RuntimeError("PowerShell is required for --update. Run scripts/traer-repos-trimestre.ps1 first, "
+                           "then grade without --update.")
+    script = ROOT / "scripts" / "traer-repos-trimestre.ps1"
+    if not script.is_file():
+        raise RuntimeError(f"Missing official refresh script: {script}")
+
+    def literal(value: str) -> str:
+        return "'" + value.replace("'", "''") + "'"
+
+    # -File cannot reliably bind multiple string[] values on all PowerShell versions.
+    # Quote each literal in -Command; paths/team names must never become shell code.
+    command = (f"& {literal(str(script))} -StatusPath {literal(str(ROOT / 'trimestre-actual/estado.json'))} "
+               f"-Destination {literal(str(clones))} "
+               f"-Team @({','.join(literal(team) for team in teams)}) "
+               f"-ExcludeTeams @({','.join(literal(team) for team in excluded)})")
+    subprocess.run([shell, "-NoProfile", "-NonInteractive", "-Command", command], check=True)
 
 
 def build_submission(team, repo, filename, sha, penalty, version, output, roster, warnings):
@@ -199,7 +220,7 @@ def run_case(submission, case, data, output, timeout, seed, spec):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--update", action="store_true")
+    parser.add_argument("--update", action="store_true", help="Run scripts/traer-repos-trimestre.ps1 before grading")
     parser.add_argument("--team", action="append")
     parser.add_argument("--clones", type=Path)
     parser.add_argument("--output", type=Path)
@@ -225,10 +246,7 @@ def main():
     if output == ROOT or output.is_relative_to(clones) or clones.is_relative_to(output):
         raise ValueError("Output must be separate from clones and the repository root")
     if args.update:
-        state = json.loads((ROOT / "trimestre-actual" / "estado.json").read_text(encoding="utf-8-sig"))
-        urls = {item["repo"]: item["url"] for item in state}
-        for team, repo in teams:
-            print(f"{team}: {sync_clone(urls[repo], clones / repo)}", flush=True)
+        refresh_clones(clones, [team for team, _ in teams], rubric.excluded_teams)
     warnings = []
     preliminary = datetime.fromisoformat(rubric.cutoff) > datetime.now(timezone.utc)
     if preliminary:
@@ -286,6 +304,7 @@ def main():
                 "sha256": {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
                            for path in [*sorted(CONFIG.glob('*.*')), *sorted((CONFIG / 'casos').glob('*.csv')),
                                         ROOT / 'correcciones/calificador_tarea_2.py',
+                                        CONFIG / 'corregir.py', ROOT / 'scripts/traer-repos-trimestre.ps1',
                                         ROOT / 'correcciones/multicapa.py', ROOT / 'correcciones/multicapa_runner.py']},
                 "evaluated_versions": [{"team": s.team, "file": s.file, "commit": s.commit,
                       "version": s.version, "source_dir": str(s.source_dir or '')} for s in all_versions]}
