@@ -1,0 +1,26 @@
+{
+  "name": "Tarea 5: Sim City",
+  "cutoff": "2099-12-31T23:59:00-04:00",
+  "minimum_grade": 1,
+  "maximum_grade": 20,
+  "late_penalty_points": 2,
+  "excluded_teams": [
+    "grupo-control"
+  ],
+  "criteria": [
+    {
+      "key": "blank_grid_add_zone",
+      "description": "Programa a partir de cuadrícula en blanco: es posible agregar una zona correctamente",
+      "correct": 50,
+      "incorrect": 25,
+      "no_result": 0
+    },
+    {
+      "key": "loaded_city_updates",
+      "description": "Programa cargado: las zonas y arterias viales se actualizan según la mayoría de las reglas de crecimiento y decrecimiento",
+      "correct": 50,
+      "incorrect": 25,
+      "no_result": 0
+    }
+  ]
+}

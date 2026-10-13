@@ -90,6 +90,55 @@ def test_rubric_rejects_an_inverted_scale(tmp_path):
         load_rubric(write_rubric(tmp_path, criteria=config["criteria"]))
 
 
+def test_tarea_3_five_level_scale_grades_from_the_best_and_worst_outcomes():
+    rubric = load_rubric(CORRECTIONS_DIR / "tarea-3" / "tarea.json")
+    assert set(rubric.criteria) == {"original_rectangular", "original_convolutional",
+                                    "simplified_rectangular", "simplified_convolutional"}
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "great_majority")) == (100, 20)
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "no_result")) == (0, rubric.minimum_grade)
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "majority"))[0] == 60
+
+
+@pytest.mark.parametrize("change", [
+    {"majority": 30},                                           # inverted points scale
+    {"thresholds": {"great_majority": 0.5, "majority": 0.75}},  # ascending thresholds
+    {"thresholds": {"great_majority": 1.0}},                    # unreachable level
+    {"thresholds": {"majority": 0.5, "great_majority": 0.75}},  # not in scale order
+    {"thresholds": {"unknown_level": 0.5}},                     # outcome outside the scale
+], ids=["inverted-points", "ascending", "unreachable", "out-of-order", "unknown-level"])
+def test_rubric_rejects_a_broken_five_level_scale(tmp_path, change):
+    config = json.loads((CORRECTIONS_DIR / "tarea-3" / "tarea.json").read_text(encoding="utf-8"))
+    config["criteria"][0].update(change)
+    with pytest.raises(ValueError):
+        load_rubric(write_rubric(tmp_path, criteria=config["criteria"]))
+
+
+def test_tarea_4_weights_each_criterion_by_its_own_scale():
+    rubric = load_rubric(CORRECTIONS_DIR / "tarea-4" / "tarea.json")
+    assert tuple(rubric.criteria) == ("low_mutation_function_a", "high_mutation_function_a",
+                                      "low_mutation_function_b", "high_mutation_function_b")
+    assert rubric.max_points == 100
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "adequate")) == (100, 20)
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "no_result")) == (0, rubric.minimum_grade)
+    # Function b weighs 30% per population, function a 20%: losing b costs more than losing a.
+    only_a_adequate = {key: "adequate" if key.endswith("function_a") else "no_result" for key in rubric.criteria}
+    only_b_adequate = {key: "adequate" if key.endswith("function_b") else "no_result" for key in rubric.criteria}
+    assert rubric_grade(rubric, only_a_adequate)[0] == 40
+    assert rubric_grade(rubric, only_b_adequate)[0] == 60
+
+
+def test_tarea_5_is_a_group_task_graded_half_and_half():
+    rubric = load_rubric(CORRECTIONS_DIR / "tarea-5" / "tarea.json")
+    assert tuple(rubric.criteria) == ("blank_grid_add_zone", "loaded_city_updates")
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "correct")) == (100, 20)
+    assert rubric_grade(rubric, dict.fromkeys(rubric.criteria, "no_result")) == (0, rubric.minimum_grade)
+    assert rubric_grade(rubric, {"blank_grid_add_zone": "correct", "loaded_city_updates": "no_result"})[0] == 50
+    # One deliverable per team: the support list has one row per team, not three per team.
+    with (CORRECTIONS_DIR / "tarea-5" / "alumnos.csv").open(newline="", encoding="utf-8-sig") as file:
+        teams = [row["team"] for row in csv.DictReader(file)]
+    assert teams and len(teams) == len(set(teams)), "tarea-5/alumnos.csv must list each team exactly once"
+
+
 # --- Case scoring ---
 
 def test_color_category_tolerates_shades():

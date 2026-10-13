@@ -1,0 +1,566 @@
+{
+  "team": "",
+  "assignment": "corte-preguntas-4",
+  "questions": [
+    {
+      "id": "tue9-tf-1",
+      "reading": "tuesday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #1 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue9-tf-2",
+      "reading": "tuesday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #2 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue9-tf-3",
+      "reading": "tuesday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #3 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue9-tf-4",
+      "reading": "tuesday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #4 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue9-tf-5",
+      "reading": "tuesday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #5 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue9-mc-1",
+      "reading": "tuesday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #1 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue9-mc-2",
+      "reading": "tuesday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #2 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue9-mc-3",
+      "reading": "tuesday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #3 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue9-mc-4",
+      "reading": "tuesday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #4 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue9-mc-5",
+      "reading": "tuesday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #5 sobre la lectura del martes de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-tf-1",
+      "reading": "thursday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #1 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-tf-2",
+      "reading": "thursday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #2 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-tf-3",
+      "reading": "thursday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #3 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-tf-4",
+      "reading": "thursday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #4 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-tf-5",
+      "reading": "thursday-week-9",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #5 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-mc-1",
+      "reading": "thursday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #1 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-mc-2",
+      "reading": "thursday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #2 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-mc-3",
+      "reading": "thursday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #3 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-mc-4",
+      "reading": "thursday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #4 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "thu9-mc-5",
+      "reading": "thursday-week-9",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #5 sobre la lectura del jueves de la semana 9",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-tf-1",
+      "reading": "tuesday-week-10",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #1 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-tf-2",
+      "reading": "tuesday-week-10",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #2 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-tf-3",
+      "reading": "tuesday-week-10",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #3 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-tf-4",
+      "reading": "tuesday-week-10",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #4 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-tf-5",
+      "reading": "tuesday-week-10",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #5 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-mc-1",
+      "reading": "tuesday-week-10",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #1 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-mc-2",
+      "reading": "tuesday-week-10",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #2 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-mc-3",
+      "reading": "tuesday-week-10",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #3 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-mc-4",
+      "reading": "tuesday-week-10",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #4 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue10-mc-5",
+      "reading": "tuesday-week-10",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #5 sobre la lectura del martes de la semana 10",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-tf-1",
+      "reading": "tuesday-week-11",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #1 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-tf-2",
+      "reading": "tuesday-week-11",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #2 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-tf-3",
+      "reading": "tuesday-week-11",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #3 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-tf-4",
+      "reading": "tuesday-week-11",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #4 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-tf-5",
+      "reading": "tuesday-week-11",
+      "type": "true_false",
+      "statement": "PONGAN AQUÍ SU PREGUNTA VERDADERO/FALSO #5 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Verdadero",
+        "Falso"
+      ],
+      "correct_option": "Verdadero",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-mc-1",
+      "reading": "tuesday-week-11",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #1 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-mc-2",
+      "reading": "tuesday-week-11",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #2 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-mc-3",
+      "reading": "tuesday-week-11",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #3 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-mc-4",
+      "reading": "tuesday-week-11",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #4 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    },
+    {
+      "id": "tue11-mc-5",
+      "reading": "tuesday-week-11",
+      "type": "multiple_choice",
+      "statement": "PONGAN AQUÍ SU PREGUNTA DE SELECCIÓN SIMPLE #5 sobre la lectura del martes de la semana 11",
+      "options": [
+        "Opción A (edítenla)",
+        "Opción B (edítenla)",
+        "Opción C (edítenla)",
+        "Opción D (edítenla)"
+      ],
+      "correct_option": "Opción A (edítenla)",
+      "difficulty_level": 1,
+      "source_quote": "PONGAN AQUÍ LA CITA TEXTUAL DE LA LECTURA que justifica la respuesta correcta"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "name": "Tarea 3: PyTorch",
+  "cutoff": "2099-12-31T23:59:00-04:00",
+  "minimum_grade": 1,
+  "maximum_grade": 20,
+  "late_penalty_points": 2,
+  "excluded_teams": [
+    "grupo-control"
+  ],
+  "criteria": [
+    {
+      "key": "original_rectangular",
+      "description": "La red rectangular entregada clasifica el conjunto de prueba en las 10 clases originales",
+      "outcomes": [
+        "great_majority",
+        "majority",
+        "better_than_chance",
+        "worse_than_chance",
+        "no_result"
+      ],
+      "thresholds": {
+        "great_majority": 0.75,
+        "majority": 0.5,
+        "better_than_chance": 0.1
+      },
+      "great_majority": 25,
+      "majority": 15,
+      "better_than_chance": 10,
+      "worse_than_chance": 5,
+      "no_result": 0
+    },
+    {
+      "key": "original_convolutional",
+      "description": "La red convolucional entregada clasifica el conjunto de prueba en las 10 clases originales",
+      "outcomes": [
+        "great_majority",
+        "majority",
+        "better_than_chance",
+        "worse_than_chance",
+        "no_result"
+      ],
+      "thresholds": {
+        "great_majority": 0.75,
+        "majority": 0.5,
+        "better_than_chance": 0.1
+      },
+      "great_majority": 25,
+      "majority": 15,
+      "better_than_chance": 10,
+      "worse_than_chance": 5,
+      "no_result": 0
+    },
+    {
+      "key": "simplified_rectangular",
+      "description": "La red rectangular entregada clasifica el conjunto de prueba en las 4 clases simplificadas",
+      "outcomes": [
+        "great_majority",
+        "majority",
+        "better_than_chance",
+        "worse_than_chance",
+        "no_result"
+      ],
+      "thresholds": {
+        "great_majority": 0.8,
+        "majority": 0.5,
+        "better_than_chance": 0.25
+      },
+      "great_majority": 25,
+      "majority": 15,
+      "better_than_chance": 10,
+      "worse_than_chance": 5,
+      "no_result": 0
+    },
+    {
+      "key": "simplified_convolutional",
+      "description": "La red convolucional entregada clasifica el conjunto de prueba en las 4 clases simplificadas",
+      "outcomes": [
+        "great_majority",
+        "majority",
+        "better_than_chance",
+        "worse_than_chance",
+        "no_result"
+      ],
+      "thresholds": {
+        "great_majority": 0.8,
+        "majority": 0.5,
+        "better_than_chance": 0.25
+      },
+      "great_majority": 25,
+      "majority": 15,
+      "better_than_chance": 10,
+      "worse_than_chance": 5,
+      "no_result": 0
+    }
+  ]
+}

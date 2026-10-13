@@ -1,15 +1,15 @@
-"""Grade the `corte-preguntas-1` deliverable of every team with one command.
+"""Grade a `corte-preguntas-N` deliverable of every team with one command.
 
-    python correcciones/calificador_corte.py            # grade everything
+    python correcciones/calificador_corte.py            # grade everything (corte-preguntas-1)
+    python correcciones/calificador_corte.py --corte corte-preguntas-2   # another corte
     python correcciones/calificador_corte.py --update   # fetch the team repos from GitHub first
     python correcciones/calificador_corte.py --team G1  # only one team
 
 The deliverable (`preguntas.json`) is per team, but lateness is INDIVIDUAL:
   * every student gets the grade of the team's file at the last commit before the cutoff, no penalty;
   * a student who pushed commits after the cutoff (identified by commit author email, see
-    `corte-preguntas-1/autores.csv`) gets max(cutoff version, latest version - late penalty).
-The authoritative unit tests (format, requested questions, easy and hard questions) are run for each
-version. Writes `notas.csv` (per team), `notas-sheets.csv` (per student, alphabetical, ready for Google
+    `<corte>/autores.csv`) gets max(cutoff version, latest version - late penalty).
+The authoritative unit tests of the corte (see the criteria of its `corte.json`) are run for each version. Writes `notas.csv` (per team), `notas-sheets.csv` (per student, alphabetical, ready for Google
 Sheets) and `informe.md`.
 """
 
@@ -30,7 +30,7 @@ from entregas import (commit_at_cutoff, commit_date, commits_after_cutoff_by_aut
 from lista import ListEntry, normalize, sort_key
 
 ROOT = Path(__file__).resolve().parent.parent
-CONFIG_DIR = ROOT / "correcciones" / "corte-preguntas-1"
+DEFAULT_CORTE = "corte-preguntas-1"
 STATE_FILE = ROOT / "trimestre-actual" / "estado.json"
 DELIVERY_LIST_FILE = ROOT / "trimestre-actual" / "lista-entrega.csv"
 
@@ -62,10 +62,10 @@ class TeamRow:
 
 
 def student_grade(row: TeamRow, config: CorteConfig, is_late: bool) -> tuple[int | None, bool]:
-    """Individual grade and whether the late penalty applied.
+    """Student grade and whether the late penalty applied.
 
-    A late student keeps the better of (cutoff version) and (latest version minus penalty), so a late
-    commit never hurts anyone; students without late commits of their own always get the cutoff version.
+    A late team keeps the better of (cutoff version) and (latest version minus penalty), so a late
+    commit never hurts the team.
     """
     base = row.cutoff_grade(config)
     if base is None:
@@ -144,22 +144,20 @@ def load_delivery_list(path: Path) -> list[ListEntry]:
 
 def student_rows(entries: list[ListEntry], rows: list[TeamRow], config: CorteConfig,
                  authors: dict[str, tuple[str, str]], warnings: list[str]) -> list[dict]:
-    """One row per student in alphabetical delivery order, with the individual late rule applied."""
+    """One row per student in alphabetical delivery order, with the team late rule applied."""
     by_team = {normalize(row.team): row for row in rows}
     emails_of: dict[tuple[str, str], set[str]] = {}
     for email, (last, first) in authors.items():
         emails_of.setdefault((normalize(last), normalize(first)), set()).add(email)
     for row in rows:
         for email in sorted(row.late_emails - set(authors)):
-            warnings.append(f"{row.team}: hay commits tardíos de {email}, que no está en autores.csv; no se pudo "
-                            "atribuirlos a ningún estudiante (nadie fue penalizado por ellos).")
+            warnings.append(f"{row.team}: hay commits tardíos de {email}, que no está en autores.csv.")
     result = []
     for entry in sorted(entries, key=sort_key):
         team_row = by_team.get(normalize(entry.team))
         if team_row is None:
             continue   # team not graded in this run (--team filter)
-        own_emails = emails_of.get((normalize(entry.last_name), normalize(entry.first_name)), set())
-        is_late = bool(own_emails & team_row.late_emails)
+        is_late = bool(team_row.late_commits)
         grade, penalized = student_grade(team_row, config, is_late)
         observations = []
         if grade is None:
@@ -167,7 +165,7 @@ def student_rows(entries: list[ListEntry], rows: list[TeamRow], config: CorteCon
         elif penalized:
             observations.append(f"Entrega tardía: -{config.late_penalty_points} puntos")
         elif is_late:
-            observations.append("Commits tardíos propios sin efecto: la versión al cierre es igual o mejor")
+            observations.append("Commits tardíos sin efecto: la versión al cierre es igual o mejor")
         result.append({"Apellido": entry.last_name, "Nombre": entry.first_name, "Equipo": entry.team,
                        "Nota": "" if grade is None else grade, "Observación": "; ".join(observations)})
     listed = {normalize(entry.team) for entry in entries}
@@ -207,11 +205,11 @@ def write_outputs(rows: list[TeamRow], students: list[dict], config: CorteConfig
     lines = [f"# Corrección automática: {config.name} ({term})", ""]
     if preliminary:
         lines += ["> **PRELIMINAR:** el cierre aún no ha ocurrido; se evaluó el último commit actual de cada equipo.", ""]
-    lines += [f"Cierre: {config.cutoff}. El entregable (`{config.deliverable}`) es del equipo, pero la entrega tardía es "
-              f"**individual**: cada estudiante recibe la nota de la versión del equipo al cierre; quien hizo commits "
-              f"posteriores al cierre (según `autores.csv`) recibe la mejor entre esa nota y la de la versión final con "
+    lines += [f"Cierre: {config.cutoff}. El entregable (`{config.deliverable}`) es del equipo, y la entrega tardía es "
+              f"**grupal**: todo el equipo recibe la mejor nota entre la versión al cierre y la versión final con "
               f"{config.late_penalty_points} puntos menos. Las notas salen de ejecutar las mismas pruebas unitarias que corren los "
-              "estudiantes. Cada criterio vale 5 puntos, proporcional a las pruebas que pasan.", "",
+              "estudiantes. " + f"La nota máxima es {config.maximum_grade}; puntos por criterio: "
+              + ", ".join(f"{c.key} {c.points}" for c in config.criteria) + ", proporcionales a las pruebas que pasan.", "",
               "| Equipo | Commits tardíos | " + " | ".join(c.key for c in config.criteria) + " | Pruebas | Nota al cierre | Versión final (-2) |",
               "|---|---|" + "---:|" * len(config.criteria) + "---:|---:|---:|"]
     for row in rows:
@@ -254,14 +252,14 @@ def write_outputs(rows: list[TeamRow], students: list[dict], config: CorteConfig
 def print_summary(rows: list[TeamRow], students: list[dict], config: CorteConfig, out_dir: Path, preliminary: bool) -> None:
     if preliminary:
         print("\n*** PRELIMINAR: el cierre aún no ha ocurrido; se evalúa el último commit actual ***")
-    print(f"\n{'Equipo':<12} {'Tardíos':<10} " + " ".join(f"{c.key:>6}" for c in config.criteria) + "  Pruebas  Cierre  Final(-2)")
+    print(f"\n{'Equipo':<12} {'Tardíos':<10} " + " ".join(f"{c.key:>{max(6, len(c.key))}}" for c in config.criteria) + "  Pruebas  Cierre  Final(-2)")
     for row in rows:
         if row.cutoff_result is None:
             print(f"{row.team:<12} {team_cell(row):<10} ERROR: {row.error}")
             continue
         scores = {s.key: s for s in row.cutoff_result.scores}
         final = row.late_version_grade(config)
-        print(f"{row.team:<12} {team_cell(row):<10} " + " ".join(f"{float(scores[c.key].points):>6.1f}" for c in config.criteria)
+        print(f"{row.team:<12} {team_cell(row):<10} " + " ".join(f"{float(scores[c.key].points):>{max(6, len(c.key))}.1f}" for c in config.criteria)
               + f"  {row.cutoff_result.tests_passed:>3}/{row.cutoff_result.tests_total:<3}  {row.cutoff_grade(config):>6}  {'-' if final is None else final:>9}")
     print(f"\n{'#':>2} {'Apellido, nombre':<28} {'Equipo':<10} Nota  Observación")
     for number, student in enumerate(students, 1):
@@ -273,13 +271,15 @@ def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")  # names have accents; Windows consoles default to cp1252
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--clones", type=Path, help="Folder with the local clones (default: .repos-trimestre-<term>)")
-    parser.add_argument("--output", type=Path, help="Output folder (default: correcciones/resultados/<term>/corte-preguntas-1)")
+    parser.add_argument("--corte", default=DEFAULT_CORTE, help=f"Corte folder under correcciones/ (default: {DEFAULT_CORTE})")
+    parser.add_argument("--output", type=Path, help="Output folder (default: correcciones/resultados/<term>/<corte>)")
     parser.add_argument("--cutoff", help="Override the cutoff of corte.json (ISO 8601 with timezone)")
     parser.add_argument("--team", action="append", help="Grade only this team (repeatable)")
     parser.add_argument("--update", action="store_true", help="Clone/fetch the team repos from GitHub first")
     args = parser.parse_args()
 
-    config = load_config(CONFIG_DIR / "corte.json")
+    config_dir = ROOT / "correcciones" / args.corte
+    config = load_config(config_dir / "corte.json")
     if args.cutoff:
         to_utc_iso(args.cutoff)
         config = replace(config, cutoff=args.cutoff)
@@ -290,8 +290,8 @@ def main() -> int:
         if not teams:
             raise ValueError(f"No active team matches {args.team}")
     clones = args.clones or ROOT / f".repos-trimestre-{term}"
-    out_dir = args.output or ROOT / "correcciones" / "resultados" / term / "corte-preguntas-1"
-    authors = load_authors(CONFIG_DIR / "autores.csv")
+    out_dir = args.output or ROOT / "correcciones" / "resultados" / term / args.corte
+    authors = load_authors(config_dir / "autores.csv")
     preliminary = datetime.now(timezone.utc) < datetime.fromisoformat(to_utc_iso(config.cutoff).replace("Z", "+00:00"))
 
     rows = []
