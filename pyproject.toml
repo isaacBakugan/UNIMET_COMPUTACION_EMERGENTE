@@ -9,7 +9,7 @@ dependencies = []
 dev = ["pytest", "taskipy"]
 
 [tool.taskipy.tasks]
-test               = "pytest repo-template/tests correcciones/tests"
+test               = "pytest repo-template/tests correcciones/tests parciales/tests"
 validate-format    = "python formatos/validador.py"
 grade              = "python correcciones/calificador.py"
 grade-update       = "python correcciones/calificador.py --update"
@@ -22,6 +22,9 @@ grade-corte-3-update = "python correcciones/calificador_corte.py --corte corte-p
 grade-corte-4      = "python correcciones/calificador_corte.py --corte corte-preguntas-4"
 grade-corte-4-update = "python correcciones/calificador_corte.py --corte corte-preguntas-4 --update"
 export-moodle      = "python correcciones/exportar_moodle.py"
+import-bank        = "python parciales/banco.py"
+build-exam         = "python parciales/armar.py"
+build-form         = "python parciales/formulario.py"
 report-infractions = "python scripts/reportar_infracciones.py"
 create-repos       = "pwsh -File scripts/crear-repos-trimestre.ps1"
 update-repos       = "pwsh -File scripts/actualizar-repos-trimestre.ps1"
@@ -30,8 +33,8 @@ run-corrections    = "gh workflow run correcciones-paralelas.yml"
 run-guards         = "gh workflow run guards-copias.yml"
 
 [tool.pytest.ini_options]
-# correcciones/ is a flat folder of modules (calificador, rubrica, ...), not a package
-pythonpath = ["correcciones"]
+# correcciones/ and parciales/ are flat folders of modules (calificador, banco, ...), not packages
+pythonpath = ["correcciones", "parciales"]
 
 [build-system]
 requires = ["setuptools>=68"]

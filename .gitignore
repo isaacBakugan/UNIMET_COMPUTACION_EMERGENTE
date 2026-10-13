@@ -13,3 +13,11 @@ evidence/
 sources/
 .pytest_cache/
 .venv/
+
+# Parciales por Google Forms: el banco exportado de Moodle trae las respuestas correctas; los specs reales y los IDs de forms nunca se versionan
+parciales/banco/
+parciales/specs/*.local.json
+parciales/resultados/
+# Apps Script de los parciales: ExamData.gs lleva las respuestas correctas; .clasp.json enlaza el proyecto de cada usuario
+parciales/apps-script/ExamData.gs
+.clasp.json

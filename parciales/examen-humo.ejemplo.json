@@ -1,0 +1,26 @@
+{
+  "_ayuda": "Prueba de humo del Form: una pregunta de cada tipo (V/F, selección, desarrollo corto), en modo práctica. Cambia mode a real para probar barajado, un intento por usuario y correo obligatorio.",
+  "title": "Prueba de humo - Parcial",
+  "mode": "practice",
+  "seed": 1,
+  "sections": [
+    {
+      "title": "Verdadero o Falso",
+      "section": "true_false",
+      "points": 1,
+      "pick": [{"category": "VF I Redes Neuronales", "count": 1}]
+    },
+    {
+      "title": "Selección simple",
+      "section": "simple_choice",
+      "points": 1,
+      "pick": [{"category": "SS I Redes Neuronales", "count": 1}]
+    },
+    {
+      "title": "Desarrollo",
+      "section": "development",
+      "points": 2,
+      "pick": [{"category": "RC Ejecute el algoritmo", "count": 1}]
+    }
+  ]
+}

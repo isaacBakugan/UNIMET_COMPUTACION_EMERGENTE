@@ -1,0 +1,40 @@
+{
+  "_ayuda": "Copia este archivo a parciales/specs/<nombre>.local.json (esa carpeta no se versiona). pick = {category, count} sorteado con la seed, o {id} para fijar una pregunta a mano (ids en parciales/banco/catalogo.csv).",
+  "title": "Primer Examen Parcial",
+  "mode": "real",
+  "seed": 20261022,
+  "sections": [
+    {
+      "title": "Verdadero o Falso",
+      "section": "true_false",
+      "points": 0.5,
+      "pick": [
+        {"category": "VF I Redes Neuronales", "count": 4},
+        {"category": "VF II Refuerzo", "count": 2},
+        {"category": "VF III Genéticos", "count": 2},
+        {"category": "VF IV Autómatas", "count": 2}
+      ]
+    },
+    {
+      "title": "Selección simple",
+      "section": "simple_choice",
+      "points": 1,
+      "pick": [
+        {"category": "SS I Redes Neuronales", "count": 4},
+        {"category": "SS II Refuerzo", "count": 1},
+        {"category": "SS III Genéticos", "count": 3},
+        {"category": "SS IV Autómatas", "count": 2}
+      ]
+    },
+    {
+      "title": "Desarrollo",
+      "section": "development",
+      "points": 1,
+      "pick": [
+        {"category": "Desarrollo Agentes", "count": 2},
+        {"category": "Des III Genéticos", "count": 1},
+        {"category": "RC Ejecute el algoritmo", "count": 2}
+      ]
+    }
+  ]
+}
