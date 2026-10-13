@@ -1,6 +1,8 @@
-"""Turn a resolved exam into `apps-script/ExamData.gs`, the data the Apps Script project builds the Form from.
+"""Turn a resolved exam into an `ExamData.gs`, the data an Apps Script project builds the Form from.
 
-    python parciales/formulario.py parciales/specs/parcial-1.resuelto.local.json
+    python parciales/formulario.py parciales/specs/parcial-1.resuelto.local.json --output ExamData.gs
+
+Normally not run by hand: `publicar.py` calls `to_payload`/`render` for every target of publicacion.json.
 
 `ExamData.gs` is just `const EXAM = {...};` (git-ignored: it carries the correct answers). Code.gs
 reads it; the contract between the two is enforced by a test (every `EXAM.*`, `section.*`, `q.*`,
@@ -26,8 +28,6 @@ from pathlib import Path
 from armar import TemplateError, join_with_bank
 from banco import BANK_FILE, IMAGES_DIR
 
-APPS_SCRIPT_DIR = Path(__file__).resolve().parent / "apps-script"
-EXAM_DATA_FILE = APPS_SCRIPT_DIR / "ExamData.gs"
 MAX_FORM_POINTS = 100    # Google Forms limit per question
 # Asked first in a 'real' exam, on a page of their own (shuffling only reorders the items of one page).
 # Surname and name are separate so they can be matched against trimestre-actual/lista-entrega.csv.
@@ -107,7 +107,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("resolved", type=Path)
     parser.add_argument("--bank", type=Path, default=BANK_FILE)
-    parser.add_argument("--output", type=Path, default=EXAM_DATA_FILE)
+    parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
 
     bank = json.loads(args.bank.read_text(encoding="utf-8"))

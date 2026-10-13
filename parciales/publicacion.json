@@ -1,0 +1,5 @@
+{
+  "_ayuda": "Qué examen resuelto (parciales/specs/<nombre>.resuelto.local.json) va en cada proyecto de Apps Script. Para el siguiente parcial, cambiar estos dos nombres y correr `python parciales/publicar.py --push`.",
+  "practica": "real-1-practica",
+  "parcial": "parcial-1-real"
+}

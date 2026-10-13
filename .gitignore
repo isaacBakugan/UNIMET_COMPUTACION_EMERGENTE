@@ -18,6 +18,8 @@ sources/
 parciales/banco/
 parciales/specs/*.local.json
 parciales/resultados/
-# Apps Script de los parciales: ExamData.gs lleva las respuestas correctas; .clasp.json enlaza el proyecto de cada usuario
-parciales/apps-script/ExamData.gs
+# Apps Script de los parciales: cada subcarpeta es un proyecto de Google (una por target de publicacion.json) y lo genera
+# publicar.py; su ExamData.gs lleva las respuestas correctas. Lo versionado es solo apps-script/Code.gs y appsscript.json.
+# .clasp.json enlaza cada carpeta con el proyecto de cada usuario
+parciales/apps-script/*/
 .clasp.json

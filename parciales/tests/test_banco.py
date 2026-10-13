@@ -153,8 +153,63 @@ def test_embedded_images_are_extracted_next_to_the_bank(tmp_path):
     assert (tmp_path / "out" / "imagenes" / question["id"] / "sketch.png").read_bytes() == b"hello"
 
 
+DEVELOPMENT = "Desarrollo (2 c.u.)/RC Ejecute el algoritmo/Ejecutar Algo"
+
+
+def own_question(name="Algo 1", correct_index=1, **overrides):
+    data = {"category": DEVELOPMENT, "name": name, "stem": f"Enunciado de {name}",
+            "options": [{"text": f"opción {i}", "correct": i == correct_index} for i in range(3)]}
+    return {**data, **overrides}
+
+
+def write_own(directory, filename, data):
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / filename).write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+
+def test_own_questions_are_discovered_by_disk_and_variants_share_a_family(tmp_path):
+    write_own(tmp_path, "uno.json", own_question("Algo 1"))
+    write_own(tmp_path, "dos.json", own_question("Algo 2", correct_index=2))
+    (tmp_path / "notas.txt").write_text("no es una pregunta", encoding="utf-8")
+    questions = banco.load_own_questions(tmp_path)
+    assert len(questions) == 2    # a gate that finds nothing would pass green and prove nothing
+    assert questions[0]["family"] == questions[1]["family"]
+    assert questions[0]["id"] != questions[1]["id"]
+    assert {q["section"] for q in questions} == {"development"} and {q["origin"] for q in questions} == {"own"}
+
+
+def test_a_missing_own_folder_is_an_empty_list(tmp_path):
+    assert banco.load_own_questions(tmp_path / "no-existe") == []
+
+
+@pytest.mark.parametrize("override, message", [
+    ({"options": [{"text": "a", "correct": False}, {"text": "b", "correct": False}]}, "exactly one option"),
+    ({"options": [{"text": "a", "correct": True}, {"text": "b", "correct": True}]}, "exactly one option"),
+    ({"options": [{"text": "a", "correct": True}, {"text": "A", "correct": False}]}, "duplicate options"),
+    ({"options": [{"text": "a", "correct": True}]}, "at least two"),
+    ({"category": "Otra cosa/x"}, "category must start with"),
+    ({"stem": " "}, "empty stem"),
+    ({"respuesta": "b"}, "unknown keys"),
+])
+def test_an_own_question_that_cannot_be_graded_is_a_hard_error_naming_the_file(tmp_path, override, message):
+    write_own(tmp_path, "mala.json", own_question(**override))
+    with pytest.raises(ValueError, match=f"mala.json: .*{message}"):
+        banco.load_own_questions(tmp_path)
+
+
+def test_own_questions_are_merged_and_never_collide_with_the_bank(tmp_path):
+    export = write_export(tmp_path, category_xml(DEVELOPMENT), question_xml(name="De Moodle 1"))
+    write_own(tmp_path / "propias", "uno.json", own_question("Algo 1"))
+    bank = banco.load_bank(export)
+    banco.merge_own_questions(bank, banco.load_own_questions(tmp_path / "propias"))
+    assert sorted(q["name"] for q in bank.ok) == ["Algo 1", "De Moodle 1"]
+    with pytest.raises(ValueError, match="same content"):
+        banco.merge_own_questions(bank, banco.load_own_questions(tmp_path / "propias"))
+
+
 @pytest.mark.parametrize("path", ["parciales/banco/preguntas-x.xml", "parciales/specs/parcial-1.local.json",
-                                  "parciales/specs/parcial-1.resuelto.local.json", "parciales/resultados/forms.json"])
+                                  "parciales/specs/parcial-1.resuelto.local.json", "parciales/resultados/forms.json",
+                                  "parciales/banco/propias/forward-propagation-1.json"])
 def test_gate_sensitive_paths_are_git_ignored(path):
     """The bank carries the correct answers: a stray `git add .` must never publish it."""
     result = subprocess.run(["git", "check-ignore", "-q", path], cwd=ROOT)

@@ -7,6 +7,9 @@ Nothing is dropped silently: every `<question>` of the export ends up in exactly
 (`ok`, `quarantined` with its reasons, or `ignored` for Moodle's own bookkeeping), and the
 console report prints the three counts so they can be reconciled against Moodle.
 
+Hand-written questions (the ones that do not exist in Moodle) go in `parciales/banco/propias/*.json`, one file per
+question. They are merged into the bank on every run, so a re-import never loses them; see `load_own_questions`.
+
 Output (all of `parciales/banco/` is git-ignored, the bank carries the correct answers):
     banco.json            normalized questions, plus the report
     catalogo.csv          one row per usable question (id, category, family, name...) to pick by hand
@@ -33,6 +36,7 @@ BANK_DIR = ROOT / "banco"
 BANK_FILE = BANK_DIR / "banco.json"
 IMAGES_DIR = BANK_DIR / "imagenes"
 CATALOG_FILE = BANK_DIR / "catalogo.csv"
+OWN_DIR = BANK_DIR / "propias"
 
 # First path component of the Moodle category -> section of the exam. A category whose first
 # component is not listed here is quarantined (`unknown_section`), never guessed.
@@ -273,6 +277,65 @@ def load_bank(xml_path: Path) -> Bank:
     return bank
 
 
+def normalize_own_question(data: dict, source: str) -> dict:
+    """Turn one hand-written question (`{"category", "name", "stem", "options": [{"text", "correct"}]}`) into the
+    normalized record. Unlike a Moodle export, a hand-written file that cannot be graded is a hard error: the
+    author is looking at it right now, so it must never end up quarantined silently."""
+    problems = []
+    unknown = [key for key in data if key not in {"category", "name", "stem", "options"} and not key.startswith("_")]
+    if unknown:
+        problems.append(f"unknown keys {unknown}")
+    category = data.get("category", "")
+    name = (data.get("name") or "").strip()
+    stem = (data.get("stem") or "").strip()
+    options = [{"text": str(o.get("text", "")).strip(), "correct": o.get("correct") is True}
+               for o in data.get("options", [])]
+    section = SECTION_BY_TOP_CATEGORY.get(category.split("/")[0])
+    if section is None:
+        problems.append(f"category must start with one of {sorted(SECTION_BY_TOP_CATEGORY)}")
+    if not name:
+        problems.append("empty name")
+    if not stem:
+        problems.append("empty stem")
+    if len(options) < 2 or any(not o["text"] for o in options):
+        problems.append("needs at least two non-empty options")
+    if len({o["text"].casefold() for o in options}) != len(options):
+        problems.append("duplicate options")
+    if sum(o["correct"] for o in options) != 1:
+        problems.append("exactly one option must be correct")
+    if problems:
+        raise ValueError(f"{source}: " + "; ".join(problems))
+    unit, chapter = parse_unit_and_chapter(category.split("/")[1:])
+    return {
+        "id": question_id(stem, options), "name": name, "section": section, "category": category,
+        "family": f"{category}|{family_name(name)}", "unit": unit, "chapter": chapter, "stem": stem,
+        "options": options, "shuffle_options": False, "image_files": [], "review_flags": [], "reasons": [],
+        "warnings": [], "origin": "own", "_files": [],
+    }
+
+
+def load_own_questions(own_dir: Path = OWN_DIR) -> list[dict]:
+    """Every `*.json` of `propias/`, discovered by disk: a file there is in the bank, no registration needed."""
+    questions = []
+    for path in sorted(own_dir.glob("*.json")) if own_dir.is_dir() else []:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            raise ValueError(f"{path.name}: invalid JSON ({error})") from error
+        questions.append(normalize_own_question(data, path.name))
+    return questions
+
+
+def merge_own_questions(bank: Bank, own: list[dict]) -> None:
+    """Add the hand-written questions to the usable ones; the id (content hash) must not already be there."""
+    taken = {q["id"] for q in bank.ok}
+    for question in own:
+        if question["id"] in taken:
+            raise ValueError(f"propias: '{question['name']}' has the same content as a question already in the bank")
+        taken.add(question["id"])
+        bank.ok.append(question)
+
+
 def write_bank(bank: Bank, bank_file: Path = BANK_FILE, images_dir: Path = IMAGES_DIR) -> None:
     """Write `banco.json` and extract the embedded images next to it (ok questions only)."""
     bank_file.parent.mkdir(parents=True, exist_ok=True)
@@ -309,10 +372,12 @@ def main(argv: list[str]) -> int:
             return 1
         xml_path = exports[-1]
     bank = load_bank(xml_path)
+    own = load_own_questions()
+    merge_own_questions(bank, own)
     write_bank(bank)
     write_catalog(bank)
     report = bank.report()
-    print(f"Source: {bank.source}")
+    print(f"Source: {bank.source} (+ {len(own)} own question(s) from {OWN_DIR.name}/)")
     print(f"Total {report['total']} = ok {report['ok']} + quarantined {report['quarantined']} + ignored {report['ignored']}")
     print("OK by section:", report["ok_by_section"])
     for section, units in report["ok_by_section_and_unit"].items():
