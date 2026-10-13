@@ -176,5 +176,65 @@
         ]
       }
     }
+  },
+  {
+    "team": "G1",
+    "file": "perceptron_multicapa_1.py",
+    "commit": "0e0cee3839e05a0cf257085453e49dc61aaf4324",
+    "reason": "Se verificó que 4 sale del submenú pero vuelve al menú inicial, que requiere 3 para terminar.",
+    "cases": {
+      "given_network_2d_2class": {
+        "answers": [
+          "2",
+          "{network}",
+          "2",
+          "{test}",
+          "4",
+          "3"
+        ]
+      },
+      "hidden_training_2d_2class": {
+        "answers": [
+          "1",
+          "{u}",
+          "{v}",
+          "{L}",
+          "{b}",
+          "1",
+          "{train}",
+          "{e}",
+          "2",
+          "{test}",
+          "4",
+          "3"
+        ]
+      },
+      "given_network_3d_4class": {
+        "answers": [
+          "2",
+          "{network}",
+          "2",
+          "{test}",
+          "4",
+          "3"
+        ]
+      },
+      "hidden_training_3d_4class": {
+        "answers": [
+          "1",
+          "{u}",
+          "{v}",
+          "{L}",
+          "{b}",
+          "1",
+          "{train}",
+          "{e}",
+          "2",
+          "{test}",
+          "4",
+          "3"
+        ]
+      }
+    }
   }
 ]

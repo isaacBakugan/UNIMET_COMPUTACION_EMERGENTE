@@ -12,6 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.colors import to_hex
 import numpy as np
 
 
@@ -22,7 +23,9 @@ def main():
     resource.setrlimit(resource.RLIMIT_FSIZE, (32 * 1024 * 1024, 32 * 1024 * 1024))
     random.seed(job["seed"])
     np.random.seed(job["seed"])
-    trace = {"prompts": [], "figures": [], "test_matrices": [], "error": "",
+    original_default_rng = np.random.default_rng
+    np.random.default_rng = lambda seed=None: original_default_rng(job['seed'] if seed is None else seed)
+    trace = {"prompts": [], "figures": [], "test_matrices": [], "test_comparisons": [], "error": "",
              "seed": job["seed"], "metadata": job["metadata"], "network": job["network"],
              "runtime": {"python": sys.version, "numpy": np.__version__, "matplotlib": matplotlib.__version__}}
     answers = iter(job["answers"])
@@ -49,6 +52,26 @@ def main():
     def save_figures(*args, **kwargs):
         for number in list(plt.get_fignums()):
             figure = plt.figure(number)
+            figure.canvas.draw()
+            if state['testing']:
+                for axis in figure.axes:
+                    title = axis.get_title()
+                    labels = axis.get_legend_handles_labels()[1]
+                    semantic = (title + ' ' + ' '.join(labels)).lower()
+                    if not any(word in semantic for word in ('correct', 'incorrect', 'acierto')):
+                        continue
+                    colors, points = {}, 0
+                    for collection in axis.collections:
+                        count = len(collection.get_offsets())
+                        points += count
+                        faces = collection.get_facecolors()
+                        if len(faces) == 1:
+                            faces = [faces[0]] * count
+                        for face in faces:
+                            color = to_hex(face)
+                            colors[color] = colors.get(color, 0) + 1
+                    trace['test_comparisons'].append({'title': title, 'labels': labels,
+                                                      'points': points, 'colors': colors})
             name = f"grafico_{len(trace['figures']) + 1}.png"
             figure.savefig('/out/' + name, dpi=100, bbox_inches="tight")
             trace["figures"].append({"file": name, "stage": "test" if state["testing"] else "train",

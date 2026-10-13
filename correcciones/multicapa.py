@@ -6,7 +6,9 @@ import json
 import math
 from pathlib import Path
 
-from rubrica import CaseResult
+from rubrica import CaseResult, color_category
+from lista import name_tokens
+from entregas import student_identity
 
 CASE_KEYS = ("given_network_2d_2class", "given_network_3d_4class",
              "hidden_training_2d_2class", "hidden_training_3d_4class")
@@ -52,17 +54,49 @@ def load_profiles(path: Path) -> list[dict]:
 
 
 def select_network(source_dir: Path, filename: str, dimensions: int, classes: int,
-                   explicit: str | None = None) -> tuple[Path, dict]:
+                   explicit: str | None = None, student_name: str = "") -> tuple[Path, dict]:
     """Use the individual conventional filename or a commit-pinned explicit path; never guess ownership."""
     number = filename.removesuffix(".py").rsplit("_", 1)[1]
     relative = explicit or f"red_{dimensions}d_{classes}clases_{number}.csv"
     path = (source_dir / relative).resolve()
+    if not explicit and not path.is_file() and student_name:
+        # Filenames are not mandated by the assignment. Match a unique student's name
+        # against path components; ambiguous ownership must stay pending, never be guessed.
+        peers = set()
+        for program in source_dir.glob('perceptron_multicapa_*.py'):
+            if program.name != filename:
+                peer_name, _ = student_identity(program.read_text(encoding='utf-8-sig', errors='replace'))
+                peers.update(name_tokens(peer_name))
+        tokens = name_tokens(student_name) - peers
+        candidates = []
+        for candidate in sorted(source_dir.rglob('*.csv')):
+            if not candidate.resolve().is_relative_to(source_dir.resolve()):
+                continue
+            words = name_tokens(candidate.relative_to(source_dir).as_posix().replace('_', ' ').replace('-', ' ').replace('/', ' '))
+            if not tokens & words:
+                continue
+            try:
+                parameters = network_metadata(candidate)
+            except (ValueError, OSError, IndexError):
+                continue
+            if (parameters['u'], parameters['v']) == (dimensions, classes):
+                candidates.append(candidate.resolve())
+        if len(candidates) == 1:
+            path = candidates[0]
+        elif len(candidates) > 1:
+            raise ValueError(f"Ambiguous individual networks for {filename}: {[p.name for p in candidates]}")
     if not path.is_relative_to(source_dir.resolve()) or not path.is_file():
         raise ValueError(f"Missing individual network: {relative}")
     metadata = network_metadata(path)
     if (metadata["u"], metadata["v"]) != (dimensions, classes):
         raise ValueError(f"{path.name}: expected u={dimensions}, v={classes}; got {metadata}")
     return path, metadata
+
+
+def pending_cases(submission) -> list[str]:
+    """Distinguish unavailable evidence from an observed zero-point result."""
+    return [key for key, result in submission.cases.items()
+            if result.outcome == 'no_result' and result.needs_review]
 
 
 def console_answers(case: str, metadata: dict, network: str) -> list[str]:
@@ -77,8 +111,6 @@ def console_answers(case: str, metadata: dict, network: str) -> list[str]:
 
 def score_trace(trace: dict, expected_counts: list[int], status: str) -> CaseResult:
     """Require a full confusion matrix with the independently known class supports, no accuracy threshold."""
-    if status != "ok" or trace.get("error"):
-        return CaseResult("no_result", f"Ejecución incompleta ({status}). {trace.get('error', '')[-600:]}", True)
     # Only test-stage matrices count; training output cannot substitute for the requested test.
     matrices = trace.get("test_matrices", [])
     size, total = len(expected_counts), sum(expected_counts)
@@ -90,11 +122,31 @@ def score_trace(trace: dict, expected_counts: list[int], status: str) -> CaseRes
         row_counts = [sum(row) for row in matrix]
         col_counts = [sum(row[i] for row in matrix) for i in range(size)]
         # Both common orientations are accepted, but incomplete/normalized matrices are not.
-        if row_counts != expected_counts and col_counts != expected_counts:
+        if sorted(row_counts) != sorted(expected_counts) and sorted(col_counts) != sorted(expected_counts):
             continue
         correct = sum(matrix[i][i] for i in range(size))
         outcome = "correct" if correct == total else "incorrect"
+        notice = f" La sesión terminó con {status}; la matriz completa ya había sido capturada." if status != 'ok' or trace.get('error') else ''
         return CaseResult(outcome, f"Matriz de confusión de prueba: {int(correct)}/{total} clasificaciones correctas. "
-                          "Verificar las gráficas y la correspondencia de las etiquetas.", True)
+                          "Verificar las gráficas y la correspondencia de las etiquetas." + notice, True)
+    for comparison in reversed(trace.get('test_comparisons', [])):
+        semantic = (comparison.get('title', '') + ' ' + ' '.join(comparison.get('labels', []))).lower()
+        if not any(word in semantic for word in ('correct', 'incorrect', 'acierto')):
+            continue
+        categories = {'green': 0, 'red': 0, 'other': 0}
+        for color, count in comparison.get('colors', {}).items():
+            if type(count) is not int or count < 0:
+                categories['other'] = total + 1
+                break
+            categories[color_category(color)] += count
+        if comparison.get('points') != total or categories['other'] or categories['green'] + categories['red'] != total:
+            continue
+        correct = categories['green']
+        return CaseResult('correct' if correct == total else 'incorrect',
+                          f"Gráfica explícita de correctas/incorrectas: {correct}/{total} coincidencias. "
+                          "La matriz es incompleta o no está disponible; se evalúa la clasificación observada "
+                          "y se marca la matriz para revisión, sin convertir su defecto en ausencia de resultado.", True)
+    if status != "ok" or trace.get("error"):
+        return CaseResult("no_result", f"Ejecución sin evidencia completa ({status}). {trace.get('error', '')[-600:]}", True)
     return CaseResult("no_result", "No hay matriz de confusión de prueba verificable con cobertura de todas las filas. "
                       "Revisar la traza, el menú y las gráficas; la falta de captura no demuestra que la red falle.", True)

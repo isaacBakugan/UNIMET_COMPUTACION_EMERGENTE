@@ -19,8 +19,8 @@ from calificador import (Submission, apply_overrides, build_rows, fill_identity_
                          pick_best_versions, print_summary, read_csv, write_outputs)
 from entregas import (commit_at_cutoff, commit_date, commit_exists, commits_after_cutoff,
                       export_assignment, git, remote_ref, static_review, student_identity, to_utc_iso)
-from multicapa import CASE_KEYS, FILES, FOLDER, console_answers, load_profiles, score_trace, select_network
-from lista import normalize
+from multicapa import CASE_KEYS, FILES, FOLDER, console_answers, load_profiles, score_trace, select_network, pending_cases
+from lista import normalize, BY_TEAM, UNASSIGNED
 from rubrica import CaseResult, load_rubric
 from sandbox import check_runtime, isolated_command
 
@@ -168,16 +168,23 @@ def prepare_data(output: Path) -> Path:
 def run_case(submission, case, data, output, timeout, seed, spec):
     out = output / submission.evidence_path / case
     out.mkdir(parents=True, exist_ok=True)
-    for stale in (*out.glob("grafico_*.png"), out / "traza.json"):
+    for stale in (*out.glob("grafico_*.png"), *(out / name for name in
+                 ('traza.json', 'job.json', 'resultado.json', 'salida.txt', 'errores.txt'))):
         stale.unlink(missing_ok=True)
+    def pending_result(explanation):
+        result = CaseResult('no_result', explanation, True)
+        (out / 'resultado.json').write_text(json.dumps({'status': 'pending', 'outcome': result.outcome,
+                'explanation': result.explanation, 'needs_review': True}, ensure_ascii=False, indent=2), encoding='utf-8')
+        return result
     dimensions, classes = (2, 2) if "2d_2class" in case else (3, 4)
     try:
-        network, metadata = select_network(submission.source_dir, submission.file, dimensions, classes, spec.get("network"))
+        network, metadata = select_network(submission.source_dir, submission.file, dimensions, classes,
+                                           spec.get("network"), submission.student_name)
     except (ValueError, OSError) as exc:
-        return CaseResult("no_result", str(exc) + ". Confirmar nombre de red y pertenencia al estudiante.", True)
+        return pending_result(str(exc) + ". Confirmar nombre de red y pertenencia al estudiante.")
     network_path = "/src/" + network.relative_to(submission.source_dir.resolve()).as_posix()
     if case.startswith("hidden") and metadata["e"] == 0:
-        return CaseResult("no_result", "La red entregada registra cero épocas; sus hiperparámetros no permiten este entrenamiento.", True)
+        return pending_result("La red entregada registra cero épocas; sus hiperparámetros no permiten este entrenamiento.")
     test_name = (f"{dimensions}-d_{classes}-class" if case.startswith("given")
                  else f"hidden_{dimensions}d_{classes}class") + "_test.csv"
     test_csv = "/data/" + test_name
@@ -216,6 +223,57 @@ def run_case(submission, case, data, output, timeout, seed, spec):
     (out / "resultado.json").write_text(json.dumps({"status": status, "outcome": result.outcome,
             "explanation": result.explanation, "needs_review": result.needs_review}, ensure_ascii=False, indent=2), encoding="utf-8")
     return result
+
+
+def mark_pending_grades(rows, submissions, rubric):
+    """Do not publish a numerical grade for an unresolved test or a provisional identity."""
+    for row, submission in zip(rows, submissions):
+        pending = pending_cases(submission)
+        provisional = submission.assignment in (BY_TEAM, UNASSIGNED)
+        row['grade_status'] = 'pending_evaluation' if pending else ('pending_identity' if provisional else 'proposed')
+        row['pending_criteria'] = ', '.join(pending)
+        if pending or provisional:
+            row['final_grade'] = ''
+        if pending:
+            row['rubric_grade'] = ''
+            row['rubric_points'] = ''
+            for case in pending:
+                row[case] = ''
+            row['comment'] = ' '.join(
+                f"{rubric.description(case)} ({'pendiente' if case in pending else str(row[case]) + '/25'}): "
+                f"{submission.cases[case].explanation}" for case in CASE_KEYS) + ' ' + ' '.join(submission.notes)
+    return rows
+
+
+def write_delivery_audit(rows, submissions, output):
+    """Explain what was actually delivered, independently of the numerical rubric outcome."""
+    lines = ['# Auditoría de entregas de la Tarea 2', '',
+             'Una nota pendiente no significa que no hubo entrega. Las identidades por equipo son provisionales.', '',
+             '| Estudiante | Equipo / archivo | Versión | Código | Redes CSV propias usadas | Nota propuesta | Estado |',
+             '|---|---|---|---|---|---|---|']
+    for row, submission in zip(rows, submissions):
+        path = submission.source_dir / submission.file if submission.source_dir else None
+        source = path.read_text(encoding='utf-8-sig', errors='replace') if path and path.is_file() else ''
+        code = ('Plantilla vacía' if static_review(source, ALLOWED_IMPORTS)['empty'] else
+                f"Código presente ({len(source.splitlines())} líneas)") if source else 'Archivo ausente'
+        networks = set()
+        for job in (output / submission.evidence_path).glob('*/job.json'):
+            data = json.loads(job.read_text(encoding='utf-8'))
+            networks.add(data['network'].removeprefix('/src/'))
+        status = {'pending_evaluation': 'Evaluación incompleta: no publicar mínima',
+                  'pending_identity': 'Archivo vacío; identidad sin confirmar',
+                  'proposed': 'Nota propuesta; revisar criterios visuales'}[row['grade_status']]
+        if row['assignment'] in (BY_TEAM, UNASSIGNED):
+            status += '; identidad provisional'
+        who = f"{row['last_name']}, {row['first_name']}"
+        lines.append(f"| {who} | {submission.team}/{submission.file} | {submission.version} `{submission.commit[:10]}` | "
+                     f"{code} | {', '.join(sorted(networks)) or 'No se localizó una red propia evaluable'} | "
+                     f"{row['final_grade'] if row['final_grade'] != '' else 'Pendiente'} | {status} |")
+    lines += ['', 'Las filas con código y sin redes no son una ausencia de entrega: falta un entregable de la rúbrica. '
+              'No se sustituyen sus pesos ni sus hiperparámetros por los de otro integrante.', '',
+              'Los puntajes 25/15 mantienen su condición de propuesta: la rúbrica no fija un umbral de accuracy; '
+              'la revisión docente puede aceptar una separación correcta con errores sin que el script invente un umbral.']
+    (output / 'auditoria_entregas.md').write_text('\n'.join(lines), encoding='utf-8')
 
 
 def main():
@@ -273,7 +331,7 @@ def main():
             if case in submission.cases:
                 continue
             if submission.status != "graded":
-                submission.cases[case] = CaseResult("no_result", " ".join(submission.notes), False)
+                submission.cases[case] = CaseResult("no_result", " ".join(submission.notes), submission.status != 'no_submission')
             else:
                 print(f"Running {submission.team}/{submission.file}@{submission.commit[:10]}: {case}", flush=True)
                 spec = dict(profile["cases"].get(case, {}))
@@ -284,6 +342,17 @@ def main():
                                                    args.seed, spec)
     all_versions = list(submissions)
     submissions = pick_best_versions(submissions, rubric, warnings)
+    # A tie at the minimum cannot hide a late program behind an untouched cutoff template.
+    # Keep the late evidence for review, without assigning it a numeric grade.
+    for index, chosen in enumerate(submissions):
+        if chosen.status != 'no_submission':
+            continue
+        later = next((s for s in all_versions if (s.team, s.file) == (chosen.team, chosen.file)
+                      and s.version == 'late' and s.status == 'graded' and pending_cases(s)), None)
+        if later is not None:
+            later.notes.append('Hay código entregado después del cierre; la evaluación sigue pendiente. '
+                               'No se considera una ausencia de entrega ni se publica la mínima por falta de evidencia.')
+            submissions[index] = later
     for chosen in submissions:
         unresolved = [s for s in all_versions if (s.team, s.file) == (chosen.team, chosen.file)
                       and any(result.needs_review for result in s.cases.values())]
@@ -293,8 +362,9 @@ def main():
                 chosen.cases[key].needs_review |= any(s.cases[key].needs_review for s in unresolved)
     submissions = order_by_delivery_list(submissions,
                    load_delivery_list(ROOT / "trimestre-actual" / "lista-entrega.csv"), warnings)
-    rows = build_rows(submissions, rubric)
+    rows = mark_pending_grades(build_rows(submissions, rubric), submissions, rubric)
     write_outputs(rows, submissions, rubric, output, term, warnings, preliminary)
+    write_delivery_audit(rows, submissions, output)
     print_summary(rows, output, CASE_KEYS)
     for message in warnings:
         print("ADVERTENCIA: " + message)

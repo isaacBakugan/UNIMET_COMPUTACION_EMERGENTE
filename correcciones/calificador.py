@@ -344,13 +344,14 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
     for number, row in enumerate(rows, 1):
         who = display_name(row) + (" *(provisional)*" if row["assignment"] == BY_TEAM else "")
         lines.append(f"| {number} | {who} | {row['team']}/{row['file']} | " + " | ".join(str(row[case]) for case in case_keys)
-                     + f" | {row['rubric_grade']} | {row['penalty_points']} | **{row['final_grade']}** | {row['needs_review'] or '-'} |")
+                     + f" | {row['rubric_grade']} | {row['penalty_points']} | **{row['final_grade'] if row['final_grade'] != '' else 'Pendiente'}** | {row['needs_review'] or '-'} |")
     if warnings:
         lines += ["", "## Advertencias", ""] + [f"- {text}" for text in warnings]
     lines += ["", "## Detalle por archivo", ""]
     for s, row in zip(submissions, rows):
         who = display_name(row)
-        lines += [f"### {who} — {row['team']}/{row['file']} — {row['final_grade']}/{rubric.maximum_grade}", "",
+        grade_text = f"{row['final_grade']}/{rubric.maximum_grade}" if row['final_grade'] != '' else 'Pendiente de evaluación o identidad'
+        lines += [f"### {who} — {row['team']}/{row['file']} — {grade_text}", "",
                   f"Commit evaluado: `{row['commit'] or 'ninguno'}` ({row['commit_date'] or 'sin fecha'}). Estado: {s.status}.", ""]
         for case in case_keys:
             result = s.cases[case]
@@ -361,7 +362,8 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
             pngs = sorted(figure.glob("grafico_*.png")) if figure.exists() else []
             if pngs:
                 graph = f" [Gráfica]({evidence_base}/{case}/{pngs[-1].name})"
-            lines.append(f"- **{rubric.description(case)}: {row[case]}/{rubric.criteria[case]['correct']}{tag}.** {result.explanation}{graph}")
+            score_text = f"{row[case]}/{rubric.criteria[case]['correct']}" if row[case] != '' else 'Pendiente'
+            lines.append(f"- **{rubric.description(case)}: {score_text}{tag}.** {result.explanation}{graph}")
         if s.notes:
             lines += ["", *[f"> {note}" for note in s.notes]]
         lines.append("")

@@ -93,8 +93,58 @@ def test_confusion_matrix_needs_full_coverage(matrix, outcome):
 
 
 def test_timeout_and_training_only_evidence_cannot_receive_full_credit():
-    assert score_trace({'test_matrices': [[[3, 0], [0, 5]]]}, [3, 5], 'timeout').outcome == 'no_result'
+    assert score_trace({}, [3, 5], 'timeout').outcome == 'no_result'
     assert score_trace({'train_matrices': [[[3, 0], [0, 5]]]}, [3, 5], 'ok').outcome == 'no_result'
+
+
+def test_menu_failure_after_complete_classification_does_not_erase_the_result():
+    result = score_trace({'test_matrices': [[[3, 0], [0, 5]]], 'error': 'EOFError: extra menu'}, [3, 5], 'error_1')
+    assert result.outcome == 'correct' and result.needs_review
+
+
+def test_label_order_may_differ_from_sorted_dataset_labels():
+    assert score_trace({'test_matrices': [[[5, 0], [0, 3]]]}, [3, 5], 'ok').outcome == 'correct'
+
+
+def test_complete_explicit_comparison_is_evidence_even_when_the_matrix_omits_a_class():
+    trace = {'test_matrices': [[[5, 0], [0, 0]]], 'test_comparisons': [
+        {'title': 'Correctas / incorrectas', 'points': 8, 'colors': {'#228b22': 5, '#b22222': 3}}]}
+    assert score_trace(trace, [3, 5], 'ok').outcome == 'incorrect'
+    trace['test_comparisons'][0]['points'] = 5
+    assert score_trace(trace, [3, 5], 'ok').outcome == 'no_result'
+
+
+def test_pending_capture_does_not_publish_a_minimum_grade():
+    from calificador import build_rows
+    from calificador_tarea_2 import mark_pending_grades
+    from lista import HEADER
+    rubric = load_rubric(CONFIG / 'tarea.json')
+    submission = Submission('T', 'R', FILES[0], assignment=HEADER)
+    submission.cases = {key: CaseResult('no_result', 'Missing evidence', True) for key in CASE_KEYS}
+    row = mark_pending_grades(build_rows([submission], rubric), [submission], rubric)[0]
+    assert row['final_grade'] == '' and row['rubric_grade'] == ''
+    assert row[CASE_KEYS[0]] == '' and row['grade_status'] == 'pending_evaluation'
+
+
+def test_verified_empty_file_gets_minimum_only_with_verified_identity():
+    from calificador import build_rows
+    from calificador_tarea_2 import mark_pending_grades
+    from lista import HEADER, BY_TEAM
+    rubric = load_rubric(CONFIG / 'tarea.json')
+    submission = Submission('T', 'R', FILES[0], assignment=HEADER, status='no_submission')
+    submission.cases = {key: CaseResult('no_result', 'Empty template', False) for key in CASE_KEYS}
+    assert mark_pending_grades(build_rows([submission], rubric), [submission], rubric)[0]['final_grade'] == 1
+    submission.assignment = BY_TEAM
+    assert mark_pending_grades(build_rows([submission], rubric), [submission], rubric)[0]['final_grade'] == ''
+
+
+def test_unique_name_networks_are_discovered_without_imposing_a_filename(tmp_path):
+    path = tmp_path / 'red_2-d_2-class_Ana.csv'
+    path.write_text('type,layer,index,w0,w1\nu,2,,,\nv,2,,,\nL,1,,,\nb,2,,,\ne,10,,,\nh,1,0,1,1\n')
+    assert select_network(tmp_path, FILES[0], 2, 2, student_name='Ana Perez')[0] == path
+    (tmp_path / FILES[1]).write_text('# Nombre: Ana Ruiz\nx=1\n')
+    with pytest.raises(ValueError, match='Missing individual network'):
+        select_network(tmp_path, FILES[0], 2, 2, student_name='Ana Perez')
 
 
 def test_tarea_2_late_version_uses_its_own_criteria():

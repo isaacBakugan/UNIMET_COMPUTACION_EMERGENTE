@@ -1,4 +1,7 @@
 team,file,network_2d,network_3d
+G1,perceptron_multicapa_1.py,red_2-d_2-class_Ares.csv,red_3-d_4-class_Ares.csv
+G1,perceptron_multicapa_2.py,red_2-d_2-class_Daniela.csv,red_3-d_4-class_Daniela.csv
+G1,perceptron_multicapa_3.py,red_2-d_2-class_giselle.csv,red_3-d_4-class_giselle.csv
 areperos,perceptron_multicapa_1.py,red_2d.csv,red_3d.csv
 areperos,perceptron_multicapa_2.py,red_2d_2.csv,red_3d_2.csv
 Aris,perceptron_multicapa_2.py,red_2d-vero.csv,red_3d-vero.csv
