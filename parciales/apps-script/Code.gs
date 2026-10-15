@@ -7,6 +7,9 @@
  *   createExamPractice() / createExamReal()            create the Form; if this exam (exam.key) was already
  *                                                      created they only log the link
  *   createExamPracticeAgain() / createExamRealAgain()  create another copy on purpose
+ *   exportResponsesPractice() / exportResponsesReal()  write the responses of the Form (who answered, and the score
+ *                                                      Google gave) to respuestas-<key>.json in the Drive folder;
+ *                                                      parciales/notas.py turns that file into the grades
  *
  * Run from the Apps Script editor. The contract with formulario.py (every field read here is emitted there)
  * is enforced by parciales/tests/test_formulario.py.
@@ -29,6 +32,19 @@ function createExamReal() {
 
 function createExamRealAgain() {
   return buildExam_(EXAM_REAL, true);
+}
+
+function exportResponsesPractice() {
+  return exportResponses_(EXAM_PRACTICE);
+}
+
+function exportResponsesReal() {
+  return exportResponses_(EXAM_REAL);
+}
+
+function examFolder_() {
+  const folders = DriveApp.getFoldersByName(FOLDER_NAME);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(FOLDER_NAME);
 }
 
 function buildExam_(exam, force) {
@@ -93,8 +109,7 @@ function buildExam_(exam, force) {
 
   const shuffleStatus = optionShuffleStatus_(shuffledItemIds.length);
 
-  const folders = DriveApp.getFoldersByName(FOLDER_NAME);
-  DriveApp.getFileById(form.getId()).moveTo(folders.hasNext() ? folders.next() : DriveApp.createFolder(FOLDER_NAME));
+  DriveApp.getFileById(form.getId()).moveTo(examFolder_());
   properties.setProperty(PROPERTY_PREFIX + exam.key, form.getId());
 
   const questionCount = exam.sections.reduce(function (sum, s) { return sum + s.questions.length; }, 0);
@@ -113,4 +128,74 @@ function buildExam_(exam, force) {
 function optionShuffleStatus_(requestedCount) {
   if (requestedCount === 0) return 'off';
   return 'NOT APPLIED (' + requestedCount + ' questions asked for it): turn on "Shuffle option order" by hand';
+}
+
+/**
+ * Responses of the Form of this exam as a small JSON: who answered (titles from exam.identification), the email and the
+ * score. The score is computed here, against the correct options of the exam data this project holds, with the same
+ * rules as parciales/notas.py (a test runs both on the same cases): Google's own getScore() came back null in a real
+ * exam, and a null coerced to 0 reads as a failed exam. Anything that cannot be scored (a question that is not of this
+ * exam) throws instead of counting as 0. `exam_key` lets notas.py refuse the file of another exam.
+ */
+function exportResponses_(exam) {
+  const formId = PropertiesService.getScriptProperties().getProperty(PROPERTY_PREFIX + exam.key);
+  if (!formId) {
+    throw new Error('No Form was created for exam key ' + exam.key + ' in this project: run createExam first, or push the exam data it was created with');
+  }
+  const form = FormApp.openById(formId);
+  const questions = questionIndex_(exam);
+  const identificationTitles = exam.identification.map(function (field) { return field.title; });
+  const responses = form.getResponses().map(function (response) {
+    const identification = {};
+    const items = [];
+    response.getItemResponses().forEach(function (itemResponse) {
+      const title = itemResponse.getItem().getTitle();
+      if (identificationTitles.indexOf(title) >= 0) {
+        identification[title] = String(itemResponse.getResponse());
+      } else {
+        items.push({title: title, response: String(itemResponse.getResponse())});
+      }
+    });
+    return {
+      timestamp: response.getTimestamp().toISOString(),
+      email: response.getRespondentEmail(),
+      identification: identification,
+      score: scoreItems_(questions, items, response.getRespondentEmail()),
+    };
+  });
+  const title = form.getTitle() || DriveApp.getFileById(formId).getName();
+  const data = {exam_key: exam.key, form_title: title, exported_at: new Date().toISOString(), responses: responses};
+  const file = DriveApp.createFile('respuestas-' + exam.key + '.json', JSON.stringify(data, null, 2), MimeType.PLAIN_TEXT);
+  file.moveTo(examFolder_());
+  Logger.log(responses.length + ' responses of "' + title + '" written to ' + file.getUrl());
+  return file.getUrl();
+}
+
+/** Titles and answers compared without caring how Google wraps whitespace. */
+function squash_(text) {
+  return String(text).split(/\s+/).filter(function (part) { return part.length > 0; }).join(' ');
+}
+
+function questionIndex_(exam) {
+  const index = Object.create(null);
+  exam.sections.forEach(function (section) {
+    section.questions.forEach(function (q) {
+      const title = squash_(q.stem);
+      if (index[title]) throw new Error('Two questions of the exam have the same statement: ' + title.slice(0, 50));
+      index[title] = q;
+    });
+  });
+  return index;
+}
+
+/** Points (Google's scaled integers) of the chosen options: a question with no answer, or a wrong one, adds 0. */
+function scoreItems_(questions, items, who) {
+  let points = 0;
+  items.forEach(function (item) {
+    const q = questions[squash_(item.title)];
+    if (!q) throw new Error(who + ' answered "' + squash_(item.title).slice(0, 50) + '", which is not a question of this exam');
+    const chosen = squash_(item.response);
+    if (q.options.some(function (o) { return o.correct && squash_(o.text) === chosen; })) points += q.points;
+  });
+  return points;
 }

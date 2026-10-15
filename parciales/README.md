@@ -52,6 +52,28 @@ un tercer examen se declara en el JSON y se escriben sus dos funciones (copiar l
 - **Orden de las preguntas**: `real` baraja por defecto; `"shuffle_questions": false` en el template lo deja fijo, en el orden del
   resuelto (V/F, SS, desarrollo). Cambiarlo cambia la `key` del examen: `createExam*` crea un Form nuevo, no devuelve el viejo.
 
+## Notas del parcial: del Form al CSV para Sheets
+
+```powershell
+python parciales/publicar.py --push        # una vez: sube el Code.gs con exportResponses* (los exam data no cambian, misma key)
+```
+
+1. En el editor de Apps Script (`clasp open`) ejecutar `exportResponsesReal` (la primera vez pide autorizar). Escribe
+   `respuestas-<key>.json` en la carpeta `Parciales` de Drive y deja el link en el log.
+2. Descargarlo a `parciales\resultados\parcial-1-real\respuestas.json`.
+3. `python parciales/notas.py` (task: `exam-grades`; acepta el nombre del examen y `--responses <ruta>`).
+
+Deja en `parciales/resultados/<examen>/` (ignorado por git): `notas-sheets.csv` (`Apellido,Nombre,Equipo,Nota,Observación`, en el orden
+de `trimestre-actual/lista-entrega.csv`; se pega la columna `Nota`) y `notas.csv` (una fila por respuesta, con correo, cédula y cómo se cruzó).
+
+- **Puntaje:** el export lo calcula en Apps Script contra las opciones correctas de los exam data (el JSON solo trae correo, identificación y `score`). No usa el `getScore()` de Google: en un examen real devolvió `null` y un `null` leído como 0 deja a todos en 0. Una pregunta que no es del examen hace fallar el export en vez de contar 0, y un test corre ese JS con `node` sobre casos con puntos escritos a mano. Una corrección manual hecha en el Form no entra en la nota: aplicarla a mano.
+- **Base 20:** `score` / máximo del examen x 20 (80 puntos escalados x4 -> dividir entre 4). Se niega a calcular si falta el `score` o supera el máximo.
+- **Cruce con la lista** por el nombre escrito en el Form (sin distinguir acentos ni mayúsculas, tolera apellidos o nombres de más). Quien
+  no cruza, o cruza con dos entradas, **no se adivina**: sale en las ADVERTENCIAS con su nota para asignarla a mano. Quien está en la
+  lista y no respondió queda con la `Nota` vacía (no 0) y la observación "Sin respuesta en el Form".
+- Dos respuestas de la misma persona: cuenta la primera y se marca para revisar.
+- Si el JSON es de otro examen (`exam_key` distinto) o trae un puntaje mayor al máximo, el script se niega a calcular.
+
 ## Directriz: examen de práctica vs examen real
 
 La práctica ("Real 1 Práctica") y el parcial ("Parcial 1 Real") comparten estructura y modo `real`, para que
