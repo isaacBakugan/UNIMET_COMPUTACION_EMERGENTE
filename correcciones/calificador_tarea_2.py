@@ -234,15 +234,39 @@ def mark_pending_grades(rows, submissions, rubric):
         row['pending_criteria'] = ', '.join(pending)
         if pending or provisional:
             row['final_grade'] = ''
-        if pending:
             row['rubric_grade'] = ''
             row['rubric_points'] = ''
+        if pending:
             for case in pending:
                 row[case] = ''
             row['comment'] = ' '.join(
                 f"{rubric.description(case)} ({'pendiente' if case in pending else str(row[case]) + '/25'}): "
                 f"{submission.cases[case].explanation}" for case in CASE_KEYS) + ' ' + ' '.join(submission.notes)
     return rows
+
+
+def apply_visual_reviews(submissions, reviews, output, warnings):
+    """Apply private proposed visual judgments only to the exact commit and trace inspected."""
+    indexed = {(s.team, s.file, s.commit): s for s in submissions}
+    for item in reviews:
+        key = (item['team'], item['file'], item['commit'])
+        submission = indexed.get(key)
+        if submission is None:
+            if any(s.team == item['team'] for s in submissions):
+                warnings.append(f"Revisión visual obsoleta: {key}; no se aplicó.")
+            continue
+        applied = False
+        for case, decision in item['cases'].items():
+            if submission.cases[case].source == 'teacher_decision':
+                continue
+            path = output / submission.evidence_path / case / 'traza.json'
+            if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != decision.get('trace_sha256'):
+                warnings.append(f"Revisión visual pendiente de renovar: {submission.team}/{submission.file}/{case}; cambió la evidencia.")
+                continue
+            submission.cases[case] = CaseResult(decision['outcome'], decision['explanation'], True, 'visual_review')
+            applied = True
+        if applied:
+            submission.notes.append('Revisión visual propuesta: ' + item['reason'] + ' Pendiente de validación docente.')
 
 
 def write_delivery_audit(rows, submissions, output):
@@ -285,6 +309,8 @@ def main():
     parser.add_argument("--cutoff")
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--seed", type=int, default=2526)
+    parser.add_argument('--visual-reviews', type=Path, default=CONFIG / 'revision-visual.local.json',
+                        help='Private proposed visual judgments pinned to a commit and trace hash')
     args = parser.parse_args()
     if args.timeout < 1:
         raise ValueError("timeout must be positive")
@@ -340,6 +366,8 @@ def main():
                     spec["network"] = network
                 submission.cases[case] = run_case(submission, case, data, output, args.timeout,
                                                    args.seed, spec)
+    if args.visual_reviews.is_file():
+        apply_visual_reviews(submissions, load_overrides(args.visual_reviews, CASE_KEYS), output, warnings)
     all_versions = list(submissions)
     submissions = pick_best_versions(submissions, rubric, warnings)
     # A tie at the minimum cannot hide a late program behind an untouched cutoff template.
@@ -370,6 +398,7 @@ def main():
         print("ADVERTENCIA: " + message)
     manifest = {"central_commit": git(ROOT, "rev-parse", "HEAD"), "cutoff": rubric.cutoff,
                 "seed": args.seed, "preliminary": preliminary,
+                "visual_reviews_sha256": hashlib.sha256(args.visual_reviews.read_bytes()).hexdigest() if args.visual_reviews.is_file() else None,
                 "needs_review": any(row["needs_review"] for row in rows),
                 "sha256": {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
                            for path in [*sorted(CONFIG.glob('*.*')), *sorted((CONFIG / 'casos').glob('*.csv')),

@@ -135,7 +135,8 @@ def test_verified_empty_file_gets_minimum_only_with_verified_identity():
     submission.cases = {key: CaseResult('no_result', 'Empty template', False) for key in CASE_KEYS}
     assert mark_pending_grades(build_rows([submission], rubric), [submission], rubric)[0]['final_grade'] == 1
     submission.assignment = BY_TEAM
-    assert mark_pending_grades(build_rows([submission], rubric), [submission], rubric)[0]['final_grade'] == ''
+    row = mark_pending_grades(build_rows([submission], rubric), [submission], rubric)[0]
+    assert row['final_grade'] == '' and row['rubric_grade'] == ''
 
 
 def test_unique_name_networks_are_discovered_without_imposing_a_filename(tmp_path):
@@ -278,3 +279,46 @@ def test_a_weights_only_late_update_triggers_the_individual_policy(tmp_path):
     assert [s.commit for s in versions] == [on_time, late_sha]
     assert [s.penalty for s in versions] == [0, 2]
     assert len([s for s in submissions if s.file == FILES[1]]) == 1
+
+
+def test_nonperfect_classification_requires_judgment_instead_of_an_automatic_deduction():
+    from calificador import build_rows
+    from calificador_tarea_2 import mark_pending_grades
+    from lista import HEADER
+    rubric = load_rubric(CONFIG / 'tarea.json')
+    submission = Submission('T', 'R', FILES[0], assignment=HEADER)
+    submission.cases = {key: score_trace({'test_matrices': [[[3, 0], [0, 5]]]}, [3, 5], 'ok')
+                        for key in CASE_KEYS}
+    submission.cases[CASE_KEYS[0]] = score_trace({'test_matrices': [[[2, 1], [0, 5]]]}, [3, 5], 'ok')
+    row = mark_pending_grades(build_rows([submission], rubric), [submission], rubric)[0]
+    assert row['final_grade'] == '' and row[CASE_KEYS[0]] == ''
+    assert row['pending_criteria'] == CASE_KEYS[0]
+
+
+@pytest.mark.parametrize('changed', ['none', 'commit', 'trace', 'teacher'])
+def test_visual_judgment_requires_the_exact_evidence_and_preserves_teacher_decisions(tmp_path, changed):
+    import hashlib
+    from calificador_tarea_2 import apply_visual_reviews
+    submission = Submission('T', 'R', FILES[0], commit='abc')
+    submission.evidence_path = 'evidence/test'
+    case = CASE_KEYS[0]
+    source = 'teacher_decision' if changed == 'teacher' else 'classification_review_required'
+    submission.cases = {case: CaseResult('incorrect', 'original', True, source)}
+    path = tmp_path / submission.evidence_path / case / 'traza.json'
+    path.parent.mkdir(parents=True)
+    path.write_text('{}')
+    review = {'team': 'T', 'file': FILES[0], 'commit': 'other' if changed == 'commit' else 'abc',
+              'reason': 'Pattern inspected', 'cases': {case: {'outcome': 'correct',
+                'explanation': 'Boundary errors with learned class separation',
+                'trace_sha256': hashlib.sha256(path.read_bytes()).hexdigest()}}}
+    if changed == 'trace':
+        path.write_text('{"changed": true}')
+    warnings = []
+    apply_visual_reviews([submission], [review], tmp_path, warnings)
+    result = submission.cases[case]
+    assert result.outcome == ('correct' if changed == 'none' else 'incorrect')
+    assert result.needs_review
+    if changed == 'none':
+        assert result.source == 'visual_review'
+    if changed in ('commit', 'trace'):
+        assert warnings

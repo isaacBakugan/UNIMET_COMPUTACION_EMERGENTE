@@ -356,6 +356,8 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
         for case in case_keys:
             result = s.cases[case]
             tag = " (decisión docente)" if result.source == "teacher_decision" else ""
+            if result.source == 'visual_review':
+                tag = ' (revisión visual propuesta)'
             graph = ""
             evidence_base = getattr(s, "evidence_path", f"evidence/{s.team}/{s.file.removesuffix('.py')}")
             figure = out_dir / evidence_base / case

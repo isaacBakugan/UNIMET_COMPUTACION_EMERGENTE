@@ -94,9 +94,10 @@ def select_network(source_dir: Path, filename: str, dimensions: int, classes: in
 
 
 def pending_cases(submission) -> list[str]:
-    """Distinguish unavailable evidence from an observed zero-point result."""
+    """Identify unavailable evidence and classifications awaiting qualitative judgment."""
     return [key for key, result in submission.cases.items()
-            if result.outcome == 'no_result' and result.needs_review]
+            if (result.outcome == 'no_result' and result.needs_review)
+            or result.source == 'classification_review_required']
 
 
 def console_answers(case: str, metadata: dict, network: str) -> list[str]:
@@ -128,7 +129,8 @@ def score_trace(trace: dict, expected_counts: list[int], status: str) -> CaseRes
         outcome = "correct" if correct == total else "incorrect"
         notice = f" La sesión terminó con {status}; la matriz completa ya había sido capturada." if status != 'ok' or trace.get('error') else ''
         return CaseResult(outcome, f"Matriz de confusión de prueba: {int(correct)}/{total} clasificaciones correctas. "
-                          "Verificar las gráficas y la correspondencia de las etiquetas." + notice, True)
+                          "La rúbrica no exige 100 %; revisar el patrón de clasificación antes de decidir 25 o 15." + notice,
+                          True, 'automatic' if correct == total else 'classification_review_required')
     for comparison in reversed(trace.get('test_comparisons', [])):
         semantic = (comparison.get('title', '') + ' ' + ' '.join(comparison.get('labels', []))).lower()
         if not any(word in semantic for word in ('correct', 'incorrect', 'acierto')):
@@ -145,7 +147,8 @@ def score_trace(trace: dict, expected_counts: list[int], status: str) -> CaseRes
         return CaseResult('correct' if correct == total else 'incorrect',
                           f"Gráfica explícita de correctas/incorrectas: {correct}/{total} coincidencias. "
                           "La matriz es incompleta o no está disponible; se evalúa la clasificación observada "
-                          "y se marca la matriz para revisión, sin convertir su defecto en ausencia de resultado.", True)
+                          "y se marca la matriz para revisión, sin convertir su defecto en ausencia de resultado.",
+                          True, 'automatic' if correct == total else 'classification_review_required')
     if status != "ok" or trace.get("error"):
         return CaseResult("no_result", f"Ejecución sin evidencia completa ({status}). {trace.get('error', '')[-600:]}", True)
     return CaseResult("no_result", "No hay matriz de confusión de prueba verificable con cobertura de todas las filas. "

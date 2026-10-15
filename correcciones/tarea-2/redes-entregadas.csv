@@ -6,6 +6,7 @@ areperos,perceptron_multicapa_1.py,red_2d.csv,red_3d.csv
 areperos,perceptron_multicapa_2.py,red_2d_2.csv,red_3d_2.csv
 Aris,perceptron_multicapa_2.py,red_2d-vero.csv,red_3d-vero.csv
 Innova,perceptron_multicapa_3.py,assets/red_2d.csv,assets/red_3d.csv
+Innova,perceptron_multicapa_2.py,assets/red_2d_2.csv,assets/red_3d_2.csv
 LUMON,perceptron_multicapa_2.py,assets/RedesGuardadasMario/red_2d_2clases.csv,assets/RedesGuardadasMario/red_3d_4clases.csv
 LUMON,perceptron_multicapa_3.py,assets/RedesGuardadasDiego/DMred2d.csv,assets/RedesGuardadasDiego/DMRed3d.csv
 Resuelve,perceptron_multicapa_1.py,perceptron_multicapa_2d.csv,perceptron_multicapa_3d.csv

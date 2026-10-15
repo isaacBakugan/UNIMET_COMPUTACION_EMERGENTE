@@ -14,3 +14,4 @@ sources/
 .pytest_cache/
 .venv/
 .test-deps/
+/correcciones/tarea-2/revision-visual.local.json
