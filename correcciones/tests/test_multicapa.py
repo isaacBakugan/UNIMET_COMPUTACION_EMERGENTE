@@ -322,3 +322,74 @@ def test_visual_judgment_requires_the_exact_evidence_and_preserves_teacher_decis
         assert result.source == 'visual_review'
     if changed in ('commit', 'trace'):
         assert warnings
+
+
+def test_code_delivery_is_distinct_from_missing_trained_networks():
+    from calificador import build_rows
+    from calificador_tarea_2 import mark_pending_grades
+    from lista import HEADER
+    rubric = load_rubric(CONFIG / 'tarea.json')
+    submission = Submission('T', 'R', FILES[0], assignment=HEADER)
+    submission.cases = {key: CaseResult('no_result', 'Missing trained file', True, 'missing_network') for key in CASE_KEYS}
+    row = mark_pending_grades(build_rows([submission], rubric), [submission], rubric)[0]
+    assert row['delivery_status'] == 'code_delivered_missing_networks'
+    assert row['final_grade'] == ''
+    assert row['comment'].startswith('Código entregado;')
+
+
+def test_private_identity_confirmation_is_loaded_without_changing_the_public_roster(tmp_path):
+    from calificador_tarea_2 import load_identities
+    public = tmp_path / 'public.csv'
+    private = tmp_path / 'private.csv'
+    public.write_text('team,file,student_name,national_id\nT,a.py,,\n', encoding='utf-8')
+    private.write_text('team,file,student_name,national_id\nT,a.py,Ana Perez,\n', encoding='utf-8')
+    assert load_identities(public, private)['T','a.py']['student_name'] == 'Ana Perez'
+    assert 'Ana' not in public.read_text()
+    private.write_text('team,file,student_name,national_id\nOther,a.py,Ana Perez,\n', encoding='utf-8')
+    with pytest.raises(ValueError):
+        load_identities(public, private)
+
+
+def test_functional_diagnostics_never_replace_missing_rubric_results(tmp_path, monkeypatch):
+    import calificador_tarea_2 as grader
+    submission = Submission('T', 'R', FILES[0], student_name='Ana Perez')
+    submission.evidence_path = 'evidence/T/a/abc'
+    submission.cases = {key: CaseResult('no_result', 'Missing file', True, 'missing_network') for key in CASE_KEYS}
+    original = submission.cases.copy()
+    calls = []
+    def observed(*args, **kwargs):
+        calls.append((args, kwargs))
+        return CaseResult('correct', 'All diagnostic samples classified', True)
+    monkeypatch.setattr(grader, 'run_case', observed)
+    records = grader.check_delivered_code([submission], tmp_path, tmp_path, 120, 2526)
+    assert len(records) == 2 and all(r['diagnostic_only'] for r in records)
+    assert submission.cases == original and submission.evidence_path.startswith('evidence/')
+    assert all(k['diagnostic'] for a, k in calls)
+    assert all(a[0].evidence_path.startswith('code-checks/') for a, k in calls)
+
+
+def test_a_late_syntax_error_is_delivered_code_not_the_empty_cutoff_template():
+    from calificador_tarea_2 import retain_incomplete_late_code
+    cutoff = Submission('T', 'R', FILES[0], status='no_submission')
+    late = Submission('T', 'R', FILES[0], version='late', status='does_not_compile')
+    cutoff.cases = {key: CaseResult('no_result', 'Empty', False) for key in CASE_KEYS}
+    late.cases = {key: CaseResult('no_result', 'Syntax error', True) for key in CASE_KEYS}
+    selected = [cutoff]
+    retain_incomplete_late_code(selected, [cutoff, late])
+    assert selected == [late]
+
+
+def test_reports_show_delivered_code_separately_from_the_pending_grade(tmp_path):
+    from calificador import build_rows, write_outputs
+    from calificador_tarea_2 import mark_pending_grades
+    from lista import HEADER
+    rubric = load_rubric(CONFIG / 'tarea.json')
+    submission = Submission('T', 'R', FILES[0], assignment=HEADER, student_name='Ana Perez')
+    submission.cases = {key: CaseResult('no_result', 'Missing trained file', True, 'missing_network') for key in CASE_KEYS}
+    rows = mark_pending_grades(build_rows([submission], rubric), [submission], rubric)
+    write_outputs(rows, [submission], rubric, tmp_path, 'test', [])
+    report = (tmp_path / 'informe.md').read_text(encoding='utf-8')
+    assert 'Equipo / archivo | Entrega |' in report
+    assert 'Código entregado; faltan redes CSV' in report and '**Pendiente**' in report
+    sheet = list(csv.DictReader((tmp_path / 'notas-sheets.csv').open(encoding='utf-8-sig')))[0]
+    assert sheet['Nota'] == '' and 'Código entregado;' in sheet['Observación']

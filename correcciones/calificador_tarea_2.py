@@ -165,24 +165,30 @@ def prepare_data(output: Path) -> Path:
     return data
 
 
-def run_case(submission, case, data, output, timeout, seed, spec):
+def run_case(submission, case, data, output, timeout, seed, spec, diagnostic=False):
     out = output / submission.evidence_path / case
     out.mkdir(parents=True, exist_ok=True)
     for stale in (*out.glob("grafico_*.png"), *(out / name for name in
                  ('traza.json', 'job.json', 'resultado.json', 'salida.txt', 'errores.txt'))):
         stale.unlink(missing_ok=True)
-    def pending_result(explanation):
-        result = CaseResult('no_result', explanation, True)
+    def pending_result(explanation, source='automatic'):
+        result = CaseResult('no_result', explanation, True, source)
         (out / 'resultado.json').write_text(json.dumps({'status': 'pending', 'outcome': result.outcome,
                 'explanation': result.explanation, 'needs_review': True}, ensure_ascii=False, indent=2), encoding='utf-8')
         return result
     dimensions, classes = (2, 2) if "2d_2class" in case else (3, 4)
-    try:
-        network, metadata = select_network(submission.source_dir, submission.file, dimensions, classes,
-                                           spec.get("network"), submission.student_name)
-    except (ValueError, OSError) as exc:
-        return pending_result(str(exc) + ". Confirmar nombre de red y pertenencia al estudiante.")
-    network_path = "/src/" + network.relative_to(submission.source_dir.resolve()).as_posix()
+    if diagnostic:
+        # Common diagnostic settings are never used as the student's rubric hyperparameters.
+        metadata = {"u": dimensions, "v": classes, "L": 1, "b": 8, "e": 1000}
+        network_path = ""
+    else:
+        try:
+            network, metadata = select_network(submission.source_dir, submission.file, dimensions, classes,
+                                               spec.get("network"), submission.student_name)
+        except (ValueError, OSError) as exc:
+            return pending_result("Código entregado; no se localizó la red CSV propia necesaria para este criterio. "
+                                  + str(exc) + ". Esto no equivale a una ausencia de entrega del programa.", 'missing_network')
+        network_path = "/src/" + network.relative_to(submission.source_dir.resolve()).as_posix()
     if case.startswith("hidden") and metadata["e"] == 0:
         return pending_result("La red entregada registra cero épocas; sus hiperparámetros no permiten este entrenamiento.")
     test_name = (f"{dimensions}-d_{classes}-class" if case.startswith("given")
@@ -196,7 +202,7 @@ def run_case(submission, case, data, output, timeout, seed, spec):
     if test_csv not in answers:
         raise ValueError(f"Console profile must include the test CSV: {submission.file}/{case}")
     job = {"answers": answers, "seed": seed, "metadata": metadata, "network": network_path,
-           "test_csv": test_csv, "cpu_seconds": timeout}
+           "test_csv": test_csv, "cpu_seconds": timeout, "diagnostic_only": diagnostic}
     (out / "job.json").write_text(json.dumps(job), encoding="utf-8")
     command = isolated_command(submission.source_dir, out, data,
                                ROOT / "correcciones" / "multicapa_runner.py",
@@ -232,6 +238,19 @@ def mark_pending_grades(rows, submissions, rubric):
         provisional = submission.assignment in (BY_TEAM, UNASSIGNED)
         row['grade_status'] = 'pending_evaluation' if pending else ('pending_identity' if provisional else 'proposed')
         row['pending_criteria'] = ', '.join(pending)
+        missing_networks = any(result.source == 'missing_network' for result in submission.cases.values())
+        if submission.status == 'no_submission':
+            row['delivery_status'] = 'empty_or_missing_code'
+            row['delivery_note'] = 'Archivo vacío, solo plantilla/comentarios o ausente.'
+        elif submission.status == 'does_not_compile':
+            row['delivery_status'] = 'code_delivered_syntax_error'
+            row['delivery_note'] = 'Código entregado; contiene un error de sintaxis: ' + ' '.join(submission.notes[:1])
+        elif missing_networks:
+            row['delivery_status'] = 'code_delivered_missing_networks'
+            row['delivery_note'] = 'Código entregado; faltan las redes CSV propias necesarias para calcular los cuatro criterios.'
+        else:
+            row['delivery_status'] = 'code_delivered'
+            row['delivery_note'] = 'Código entregado.'
         if pending or provisional:
             row['final_grade'] = ''
             row['rubric_grade'] = ''
@@ -242,7 +261,66 @@ def mark_pending_grades(rows, submissions, rubric):
             row['comment'] = ' '.join(
                 f"{rubric.description(case)} ({'pendiente' if case in pending else str(row[case]) + '/25'}): "
                 f"{submission.cases[case].explanation}" for case in CASE_KEYS) + ' ' + ' '.join(submission.notes)
+        row['comment'] = row['delivery_note'] + ' ' + row['comment']
     return rows
+
+
+def retain_incomplete_late_code(submissions, all_versions):
+    """Keep delivered late code visible even if it cannot compile or lacks evidence."""
+    # A tie at the minimum cannot hide a late program behind an untouched cutoff template.
+    # Keep the late evidence for review, without assigning it a numeric grade.
+    for index, chosen in enumerate(submissions):
+        if chosen.status != 'no_submission':
+            continue
+        later = next((s for s in all_versions if (s.team, s.file) == (chosen.team, chosen.file)
+                      and s.version == 'late' and s.status != 'no_submission' and pending_cases(s)), None)
+        if later is not None:
+            later.notes.append('Hay código entregado después del cierre; la evaluación sigue pendiente. '
+                               'No se considera una ausencia de entrega ni se publica la mínima por falta de evidencia.')
+            submissions[index] = later
+
+
+def load_identities(public_path, confirmed_path):
+    """Merge private confirmations without publishing identities in the grader configuration."""
+    rows = read_csv(public_path)
+    indexed = {(row['team'], row['file']): row for row in rows}
+    if confirmed_path.is_file():
+        confirmed = read_csv(confirmed_path)
+        seen = set()
+        for row in confirmed:
+            key = row['team'], row['file']
+            if key not in indexed or key in seen or not row['student_name'].strip():
+                raise ValueError(f'Invalid confirmed identity: {key}')
+            indexed[key] = {**indexed[key], **row}
+            seen.add(key)
+    return indexed
+
+
+def check_delivered_code(submissions, data, output, timeout, seed):
+    """Run independent functional diagnostics without modifying any rubric outcome."""
+    lines = ['# Comprobación funcional del código entregado', '',
+             'Diagnóstico separado de las notas. Se crea una red con L=1, b=8 y 1000 épocas, '
+             'con los datasets no vistos de corrección. Estos parámetros son del diagnóstico, '
+             'no entregados por el estudiante: los resultados no completan ni sustituyen los cuatro criterios.', '',
+             '| Estudiante | Equipo / archivo | Caso | Resultado observado |', '|---|---|---|---|']
+    records = []
+    for submission in submissions:
+        if submission.status != 'graded' or not any(r.source == 'missing_network' for r in submission.cases.values()):
+            continue
+        diagnostic = replace(submission)
+        diagnostic.evidence_path = submission.evidence_path.replace('evidence/', 'code-checks/', 1)
+        for case in CASE_KEYS[2:]:
+            print(f'Checking code {submission.team}/{submission.file}: {case}', flush=True)
+            result = run_case(diagnostic, case, data, output, timeout, seed, {}, diagnostic=True)
+            status_path = output / diagnostic.evidence_path / case / 'resultado.json'
+            execution_status = json.loads(status_path.read_text(encoding='utf-8'))['status'] if status_path.exists() else 'unknown'
+            lines.append(f'| {submission.student_name} | {submission.team}/{submission.file} | {case} | Ejecución: {execution_status}. {result.explanation} |')
+            records.append({'team': submission.team, 'file': submission.file, 'commit': submission.commit,
+                            'case': case, 'diagnostic_only': True, 'execution_status': execution_status, 'observed': result.outcome,
+                            'explanation': result.explanation, 'evidence': diagnostic.evidence_path})
+    (output / 'comprobacion_codigo.md').write_text('\n'.join(lines), encoding='utf-8')
+    (output / 'comprobacion_codigo.json').write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding='utf-8')
+    return records
 
 
 def apply_visual_reviews(submissions, reviews, output, warnings):
@@ -284,7 +362,7 @@ def write_delivery_audit(rows, submissions, output):
         for job in (output / submission.evidence_path).glob('*/job.json'):
             data = json.loads(job.read_text(encoding='utf-8'))
             networks.add(data['network'].removeprefix('/src/'))
-        status = {'pending_evaluation': 'Evaluación incompleta: no publicar mínima',
+        status = {'pending_evaluation': row['delivery_note'] + ' Evaluación incompleta.',
                   'pending_identity': 'Archivo vacío; identidad sin confirmar',
                   'proposed': 'Nota propuesta; revisar criterios visuales'}[row['grade_status']]
         if row['assignment'] in (BY_TEAM, UNASSIGNED):
@@ -311,6 +389,10 @@ def main():
     parser.add_argument("--seed", type=int, default=2526)
     parser.add_argument('--visual-reviews', type=Path, default=CONFIG / 'revision-visual.local.json',
                         help='Private proposed visual judgments pinned to a commit and trace hash')
+    parser.add_argument('--identities', type=Path, default=CONFIG / 'identidades-confirmadas.local.csv',
+                        help='Private identity confirmations from the preparer')
+    parser.add_argument('--check-code', action='store_true',
+                        help='Run non-grading functional diagnostics for programs missing their trained CSVs')
     args = parser.parse_args()
     if args.timeout < 1:
         raise ValueError("timeout must be positive")
@@ -336,7 +418,7 @@ def main():
     if preliminary:
         warnings.append("PRELIMINAR: no ha llegado el cierre configurado; confirmar la fecha antes de publicar notas.")
     data = prepare_data(output)
-    roster = {(row["team"], row["file"]): row for row in read_csv(CONFIG / "alumnos.csv")}
+    roster = load_identities(CONFIG / "alumnos.csv", args.identities)
     late = {(row["team"], row["file"]): row for row in read_csv(CONFIG / "entregas-tardias.csv")}
     networks = {(row["team"], row["file"]): {"2d": row["network_2d"], "3d": row["network_3d"]}
                 for row in read_csv(CONFIG / "redes-entregadas.csv")}
@@ -370,17 +452,7 @@ def main():
         apply_visual_reviews(submissions, load_overrides(args.visual_reviews, CASE_KEYS), output, warnings)
     all_versions = list(submissions)
     submissions = pick_best_versions(submissions, rubric, warnings)
-    # A tie at the minimum cannot hide a late program behind an untouched cutoff template.
-    # Keep the late evidence for review, without assigning it a numeric grade.
-    for index, chosen in enumerate(submissions):
-        if chosen.status != 'no_submission':
-            continue
-        later = next((s for s in all_versions if (s.team, s.file) == (chosen.team, chosen.file)
-                      and s.version == 'late' and s.status == 'graded' and pending_cases(s)), None)
-        if later is not None:
-            later.notes.append('Hay código entregado después del cierre; la evaluación sigue pendiente. '
-                               'No se considera una ausencia de entrega ni se publica la mínima por falta de evidencia.')
-            submissions[index] = later
+    retain_incomplete_late_code(submissions, all_versions)
     for chosen in submissions:
         unresolved = [s for s in all_versions if (s.team, s.file) == (chosen.team, chosen.file)
                       and any(result.needs_review for result in s.cases.values())]
@@ -393,11 +465,17 @@ def main():
     rows = mark_pending_grades(build_rows(submissions, rubric), submissions, rubric)
     write_outputs(rows, submissions, rubric, output, term, warnings, preliminary)
     write_delivery_audit(rows, submissions, output)
+    diagnostics = check_delivered_code(submissions, data, output, args.timeout, args.seed) if args.check_code else []
+    if args.check_code:
+        with (output / 'informe.md').open('a', encoding='utf-8') as stream:
+            stream.write('\n\n## Comprobación del código entregado\n\n'
+                         '[Diagnóstico funcional separado](comprobacion_codigo.md). No sustituye las redes CSV entregables ni modifica las notas.\n')
     print_summary(rows, output, CASE_KEYS)
     for message in warnings:
         print("ADVERTENCIA: " + message)
     manifest = {"central_commit": git(ROOT, "rev-parse", "HEAD"), "cutoff": rubric.cutoff,
-                "seed": args.seed, "preliminary": preliminary,
+                "seed": args.seed, "preliminary": preliminary, "code_checks": len(diagnostics),
+                "confirmed_identities_sha256": hashlib.sha256(args.identities.read_bytes()).hexdigest() if args.identities.is_file() else None,
                 "visual_reviews_sha256": hashlib.sha256(args.visual_reviews.read_bytes()).hexdigest() if args.visual_reviews.is_file() else None,
                 "needs_review": any(row["needs_review"] for row in rows),
                 "sha256": {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()

@@ -325,12 +325,19 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
         for row in rows:
             observation = {BY_TEAM: "Provisional: asignado por equipo",
                            UNASSIGNED: "Sin entrada en la lista de entrega"}.get(row["assignment"], "")
+            if row.get("delivery_note"):
+                observation += "; " + row["delivery_note"]
             if row["needs_review"]:
                 observation += "; Revisar: " + row["needs_review"]
             if preliminary:
                 observation += "; PRELIMINAR"
             writer.writerow([row["last_name"], row["first_name"], row["team"], row["final_grade"], observation])
 
+    show_delivery = any('delivery_status' in row for row in rows)
+    delivery_labels = {'code_delivered': 'Código entregado',
+                       'code_delivered_missing_networks': 'Código entregado; faltan redes CSV',
+                       'code_delivered_syntax_error': 'Código entregado; error de sintaxis',
+                       'empty_or_missing_code': 'Vacío o ausente'}
     review_label = "PROPUESTA — " if any(row["needs_review"] for row in rows) else ""
     lines = [f"# {'PRELIMINAR — ' if preliminary else review_label}Corrección automática: {rubric.name} ({term})", "",
              f"Cierre: {rubric.cutoff}. Cada archivo usa el último commit anterior al cierre, salvo las "
@@ -341,9 +348,13 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
              "luego se resta el descuento por entrega tardía.", "",
              "| # | Apellido, nombre | Equipo / archivo | C1 | C2 | C3 | C4 | Rúbrica | Descuento | Nota | Revisar |",
              "|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---|"]
+    if show_delivery:
+        lines[-2] = lines[-2].replace('Equipo / archivo |', 'Equipo / archivo | Entrega |')
+        lines[-1] = lines[-1].replace('|---:|---|---|', '|---:|---|---|---|', 1)
     for number, row in enumerate(rows, 1):
         who = display_name(row) + (" *(provisional)*" if row["assignment"] == BY_TEAM else "")
-        lines.append(f"| {number} | {who} | {row['team']}/{row['file']} | " + " | ".join(str(row[case]) for case in case_keys)
+        lines.append(f"| {number} | {who} | {row['team']}/{row['file']} | "
+                     + (delivery_labels.get(row.get('delivery_status'), '') + ' | ' if show_delivery else '') + " | ".join(str(row[case]) for case in case_keys)
                      + f" | {row['rubric_grade']} | {row['penalty_points']} | **{row['final_grade'] if row['final_grade'] != '' else 'Pendiente'}** | {row['needs_review'] or '-'} |")
     if warnings:
         lines += ["", "## Advertencias", ""] + [f"- {text}" for text in warnings]
@@ -353,6 +364,8 @@ def write_outputs(rows: list[dict], submissions: list[Submission], rubric: Rubri
         grade_text = f"{row['final_grade']}/{rubric.maximum_grade}" if row['final_grade'] != '' else 'Pendiente de evaluación o identidad'
         lines += [f"### {who} — {row['team']}/{row['file']} — {grade_text}", "",
                   f"Commit evaluado: `{row['commit'] or 'ninguno'}` ({row['commit_date'] or 'sin fecha'}). Estado: {s.status}.", ""]
+        if row.get("delivery_note"):
+            lines += [row["delivery_note"], ""]
         for case in case_keys:
             result = s.cases[case]
             tag = " (decisión docente)" if result.source == "teacher_decision" else ""
@@ -381,6 +394,9 @@ def display_name(row: dict) -> str:
 
 def print_summary(rows: list[dict], out_dir: Path, case_keys: tuple[str, ...] = CASE_KEYS) -> None:
     print(f"\n{'#':>2} {'Apellido, nombre':<26} {'Equipo':<10} {'Archivo':<16} C1  C2  C3  C4  Rúb  Desc  Nota  Revisar")
+    if show_delivery:
+        lines[-2] = lines[-2].replace('Equipo / archivo |', 'Equipo / archivo | Entrega |')
+        lines[-1] = lines[-1].replace('|---:|---|---|', '|---:|---|---|---|', 1)
     for number, row in enumerate(rows, 1):
         who = display_name(row) + (" *" if row["assignment"] == BY_TEAM else "")
         print(f"{number:>2} {who[:25]:<26} {row['team']:<10} {row['file']:<16} "

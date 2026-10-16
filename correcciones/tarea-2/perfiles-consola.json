@@ -2,8 +2,8 @@
   {
     "team": "LUMON",
     "file": "perceptron_multicapa_2.py",
-    "commit": "8c6c5d04cf4fce92236fcc5ad96d637ab59dcc97",
-    "reason": "Se revisó el menú: selección Otro archivo (5) de Mario y confirmación de salida sin guardar de Diego.",
+    "commit": "f8edff4e1c49bed2db8bb2a860e4cc82fe75f240",
+    "reason": "Se conserva el menú revisado: selección Otro archivo (5). Se verificó que el commit de otro integrante no cambió este programa ni sus redes.",
     "cases": {
       "given_network_2d_2class": {
         "answers": [

@@ -134,3 +134,18 @@ Trabajar en `develop`. Revisar `git status` y añadir archivos concretos; antes 
 Se corrigieron tres causas de falsas mínimas: nombres válidos de redes que no coincidían con la convención del corrector; cierre del submenú después de una prueba completa; y confusión entre falta de captura y falta de entrega. Las redes de G1 se reconocen por su nombre real. Se conserva la versión tardía con código para revisión cuando una plantilla al cierre y la versión tardía incompleta empatan artificialmente en la mínima.
 
 La semilla también controla `numpy.random.default_rng()` cuando el estudiante no proporciona una semilla explícita. No se altera la lógica de aprendizaje ni los pesos de las redes entregadas.
+
+
+## Código entregado y redes faltantes
+
+La presencia de código ejecutable significa que se entregó el programa. Una plantilla que solo conserva comentarios no es código entregado. `notas.csv` separa `delivery_status` y `delivery_note` de `grade_status`: `code_delivered`, `code_delivered_missing_networks`, `code_delivered_syntax_error` y `empty_or_missing_code`. El CSV para la planilla también explica esta situación en la observación.
+
+Si falta una red CSV propia, no se puede cargar la red entregada ni recuperar sus hiperparámetros para los cuatro criterios. Esto se informa como evaluación incompleta; no se describe como ausencia del programa. `--check-code` permite ejecutar además dos pruebas funcionales con parámetros comunes del diagnóstico, en el sandbox. Produce `comprobacion_codigo.md`, `comprobacion_codigo.json` y `code-checks/`. Estas pruebas no aportan puntos ni sustituyen las redes/hiperparámetros entregables.
+
+La preparadora puede confirmar una identidad en `identidades-confirmadas.local.csv` (mismas columnas que `alumnos.csv`), ignorado por Git; `--identities` permite indicar otra ruta privada. La identidad confirmada elimina la asignación provisional, pero no acredita redes faltantes. La mínima se aplica a un archivo vacío únicamente cuando su identidad está confirmada.
+
+## Trabajar fuera de OneDrive
+
+Puede mantenerse el repo central, los clones y los resultados en una carpeta local no sincronizada, por ejemplo `%USERPROFILE%\UNIMET_PrepaCE`. Desde esa carpeta se ejecutan los mismos comandos. El script oficial admite `-Destination` y el corrector admite `--clones` y `--output` para separar esas ubicaciones. Los archivos privados de revisión e identidad se conservan localmente junto al corrector.
+
+Para revisar visualmente una entrega sin descargarla se puede abrir directamente el repositorio GitHub del equipo. Ejecutar código en esta máquina requiere una copia local: esta ubicación evita que OneDrive la sincronice. Si se requiere ejecutar sin almacenar fuentes en la computadora, debe usarse un entorno remoto privado que también proteja las notas; este flujo no publica resultados en el GitHub público.
