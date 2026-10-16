@@ -165,7 +165,7 @@ def prepare_data(output: Path) -> Path:
     return data
 
 
-def run_case(submission, case, data, output, timeout, seed, spec, diagnostic=False):
+def run_case(submission, case, data, output, timeout, seed, spec, diagnostic=False, diagnostic_data='hidden'):
     out = output / submission.evidence_path / case
     out.mkdir(parents=True, exist_ok=True)
     for stale in (*out.glob("grafico_*.png"), *(out / name for name in
@@ -193,8 +193,13 @@ def run_case(submission, case, data, output, timeout, seed, spec, diagnostic=Fal
         return pending_result("La red entregada registra cero épocas; sus hiperparámetros no permiten este entrenamiento.")
     test_name = (f"{dimensions}-d_{classes}-class" if case.startswith("given")
                  else f"hidden_{dimensions}d_{classes}class") + "_test.csv"
-    test_csv = "/data/" + test_name
     answers = spec.get("answers", console_answers(case, metadata, network_path))
+    if diagnostic and diagnostic_data == 'practice':
+        hidden_prefix = f"hidden_{dimensions}d_{classes}class"
+        practice_prefix = f"{dimensions}-d_{classes}-class"
+        test_name = practice_prefix + '_test.csv'
+        answers = [answer.replace('/data/' + hidden_prefix, '/data/' + practice_prefix) for answer in answers]
+    test_csv = "/data/" + test_name
     substitutions = {"{network}": network_path, "{test}": test_csv,
                      "{train}": f"/data/hidden_{dimensions}d_{classes}class_train.csv",
                      **{f"{{{key}}}": str(value) for key, value in metadata.items()}}
@@ -202,7 +207,7 @@ def run_case(submission, case, data, output, timeout, seed, spec, diagnostic=Fal
     if test_csv not in answers:
         raise ValueError(f"Console profile must include the test CSV: {submission.file}/{case}")
     job = {"answers": answers, "seed": seed, "metadata": metadata, "network": network_path,
-           "test_csv": test_csv, "cpu_seconds": timeout, "diagnostic_only": diagnostic}
+           "test_csv": test_csv, "cpu_seconds": timeout, "diagnostic_only": diagnostic, "diagnostic_data": diagnostic_data if diagnostic else None}
     (out / "job.json").write_text(json.dumps(job), encoding="utf-8")
     command = isolated_command(submission.source_dir, out, data,
                                ROOT / "correcciones" / "multicapa_runner.py",
@@ -226,6 +231,10 @@ def run_case(submission, case, data, output, timeout, seed, spec, diagnostic=Fal
         labels = [float(row["y"]) for row in csv.DictReader(stream)]
     counts = [labels.count(label) for label in sorted(set(labels))]
     result = score_trace(trace, counts, status)
+    if diagnostic:
+        result = replace(result, explanation=result.explanation.replace(
+            'La rúbrica no exige 100 %; revisar el patrón de clasificación antes de decidir 25 o 15.',
+            'Prueba funcional con una red creada durante el diagnóstico.'))
     (out / "resultado.json").write_text(json.dumps({"status": status, "outcome": result.outcome,
             "explanation": result.explanation, "needs_review": result.needs_review}, ensure_ascii=False, indent=2), encoding="utf-8")
     return result
@@ -296,11 +305,13 @@ def load_identities(public_path, confirmed_path):
     return indexed
 
 
-def check_delivered_code(submissions, data, output, timeout, seed):
+def check_delivered_code(submissions, data, output, timeout, seed, dataset='practice'):
     """Run independent functional diagnostics without modifying any rubric outcome."""
+    dataset_description = 'los datos de práctica de assets/' if dataset == 'practice' else 'los datasets no vistos de corrección'
+    report_stem = 'comprobacion_codigo_practica' if dataset == 'practice' else 'comprobacion_codigo'
     lines = ['# Comprobación funcional del código entregado', '',
              'Diagnóstico separado de las notas. Se crea una red con L=1, b=8 y 1000 épocas, '
-             'con los datasets no vistos de corrección. Estos parámetros son del diagnóstico, '
+             f'con {dataset_description}. Estos parámetros son del diagnóstico, '
              'no entregados por el estudiante: los resultados no completan ni sustituyen los cuatro criterios.', '',
              '| Estudiante | Equipo / archivo | Caso | Resultado observado |', '|---|---|---|---|']
     records = []
@@ -308,18 +319,19 @@ def check_delivered_code(submissions, data, output, timeout, seed):
         if submission.status != 'graded' or not any(r.source == 'missing_network' for r in submission.cases.values()):
             continue
         diagnostic = replace(submission)
-        diagnostic.evidence_path = submission.evidence_path.replace('evidence/', 'code-checks/', 1)
+        diagnostic.evidence_path = submission.evidence_path.replace('evidence/', f'code-checks/{dataset}/', 1)
         for case in CASE_KEYS[2:]:
             print(f'Checking code {submission.team}/{submission.file}: {case}', flush=True)
-            result = run_case(diagnostic, case, data, output, timeout, seed, {}, diagnostic=True)
+            result = run_case(diagnostic, case, data, output, timeout, seed, {}, diagnostic=True, diagnostic_data=dataset)
             status_path = output / diagnostic.evidence_path / case / 'resultado.json'
             execution_status = json.loads(status_path.read_text(encoding='utf-8'))['status'] if status_path.exists() else 'unknown'
-            lines.append(f'| {submission.student_name} | {submission.team}/{submission.file} | {case} | Ejecución: {execution_status}. {result.explanation} |')
+            display_case = '2D / 2 clases' if '2d_2class' in case else '3D / 4 clases'
+            lines.append(f'| {submission.student_name} | {submission.team}/{submission.file} | {display_case} | Ejecución: {execution_status}. {result.explanation} |')
             records.append({'team': submission.team, 'file': submission.file, 'commit': submission.commit,
-                            'case': case, 'diagnostic_only': True, 'execution_status': execution_status, 'observed': result.outcome,
+                            'case': case, 'dataset': dataset, 'diagnostic_only': True, 'execution_status': execution_status, 'observed': result.outcome,
                             'explanation': result.explanation, 'evidence': diagnostic.evidence_path})
-    (output / 'comprobacion_codigo.md').write_text('\n'.join(lines), encoding='utf-8')
-    (output / 'comprobacion_codigo.json').write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding='utf-8')
+    (output / (report_stem + '.md')).write_text('\n'.join(lines), encoding='utf-8')
+    (output / (report_stem + '.json')).write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding='utf-8')
     return records
 
 
@@ -393,6 +405,8 @@ def main():
                         help='Private identity confirmations from the preparer')
     parser.add_argument('--check-code', action='store_true',
                         help='Run non-grading functional diagnostics for programs missing their trained CSVs')
+    parser.add_argument('--diagnostic-data', choices=('practice', 'hidden'), default='practice',
+                        help='Datasets for non-grading code checks (default: practice assets)')
     args = parser.parse_args()
     if args.timeout < 1:
         raise ValueError("timeout must be positive")
@@ -465,11 +479,11 @@ def main():
     rows = mark_pending_grades(build_rows(submissions, rubric), submissions, rubric)
     write_outputs(rows, submissions, rubric, output, term, warnings, preliminary)
     write_delivery_audit(rows, submissions, output)
-    diagnostics = check_delivered_code(submissions, data, output, args.timeout, args.seed) if args.check_code else []
+    diagnostics = check_delivered_code(submissions, data, output, args.timeout, args.seed, args.diagnostic_data) if args.check_code else []
     if args.check_code:
         with (output / 'informe.md').open('a', encoding='utf-8') as stream:
             stream.write('\n\n## Comprobación del código entregado\n\n'
-                         '[Diagnóstico funcional separado](comprobacion_codigo.md). No sustituye las redes CSV entregables ni modifica las notas.\n')
+                         f"[Diagnóstico funcional separado]({'comprobacion_codigo_practica.md' if args.diagnostic_data == 'practice' else 'comprobacion_codigo.md'}). No sustituye las redes CSV entregables ni modifica las notas.\n")
     print_summary(rows, output, CASE_KEYS)
     for message in warnings:
         print("ADVERTENCIA: " + message)

@@ -393,3 +393,22 @@ def test_reports_show_delivered_code_separately_from_the_pending_grade(tmp_path)
     assert 'Código entregado; faltan redes CSV' in report and '**Pendiente**' in report
     sheet = list(csv.DictReader((tmp_path / 'notas-sheets.csv').open(encoding='utf-8-sig')))[0]
     assert sheet['Nota'] == '' and 'Código entregado;' in sheet['Observación']
+
+
+@pytest.mark.parametrize('dataset,prefix', [('practice', '2-d_2-class'), ('hidden', 'hidden_2d_2class')])
+def test_diagnostics_use_the_requested_train_and_test_without_borrowing_a_network(tmp_path, monkeypatch, dataset, prefix):
+    import calificador_tarea_2 as grader
+    from types import SimpleNamespace
+    data = grader.prepare_data(tmp_path)
+    submission = Submission('T', 'R', FILES[0], source_dir=tmp_path)
+    submission.evidence_path = 'diagnostic/T'
+    def forbidden_network_lookup(*args):
+        pytest.fail('A diagnostic must create its own network')
+    monkeypatch.setattr(grader, 'select_network', forbidden_network_lookup)
+    monkeypatch.setattr(grader, 'isolated_command', lambda *args: ['sandbox'])
+    monkeypatch.setattr(grader.subprocess, 'run', lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout='', stderr=''))
+    grader.run_case(submission, CASE_KEYS[2], data, tmp_path, 120, 2526, {}, diagnostic=True, diagnostic_data=dataset)
+    job = json.loads((tmp_path / submission.evidence_path / CASE_KEYS[2] / 'job.json').read_text())
+    assert job['test_csv'] == f'/data/{prefix}_test.csv'
+    assert f'/data/{prefix}_train.csv' in job['answers']
+    assert job['network'] == '' and job['diagnostic_only']
